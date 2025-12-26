@@ -1,0 +1,138 @@
+{
+    "common": {
+        "loading": "लोड हो रहा है...",
+        "error": "त्रुटि",
+        "success": "सफल",
+        "cancel": "रद्द करें",
+        "confirm": "पुष्टि करें",
+        "save": "सेव करें",
+        "edit": "बदलें",
+        "delete": "हटाएं",
+        "back": "वापस",
+        "next": "आगे",
+        "submit": "जमा करें",
+        "retry": "पुन: प्रयास",
+        "close": "बंद करें"
+    },
+    "auth": {
+        "welcome": "AgroCycle में आपका स्वागत है",
+        "tagline": "अपनी पराली को कमाई में बदलें",
+        "enterPhone": "अपना फ़ोन नंबर डालें",
+        "phonePlaceholder": "10 अंकों का मोबाइल नंबर",
+        "sendOtp": "OTP भेजें",
+        "enterOtp": "OTP दर्ज करें",
+        "otpSent": "OTP भेजा गया",
+        "verifyOtp": "OTP सत्यापित करें",
+        "resendOtp": "OTP दोबारा भेजें",
+        "resendIn": "दोबारा भेजें",
+        "seconds": "सेकंड में",
+        "invalidPhone": "कृपया सही 10 अंकों वाला फ़ोन नंबर डालें",
+        "invalidOtp": "गलत OTP। कृपया पुन: प्रयास करें"
+    },
+    "kyc": {
+        "title": "अपनी प्रोफाइल पूरी करें",
+        "subtitle": "शुरू करने के लिए अपनी जानकारी दें",
+        "name": "आपका नाम",
+        "namePlaceholder": "अपना पूरा नाम लिखें",
+        "aadhaar": "आधार नंबर",
+        "aadhaarPlaceholder": "12 अंकों का आधार नंबर",
+        "upiId": "UPI ID (भुगतान के लिए)",
+        "upiPlaceholder": "yourname@upi",
+        "submit": "पंजीकरण पूरा करें"
+    },
+    "dashboard": {
+        "title": "मेरा खेत",
+        "greeting": "नमस्ते",
+        "totalEarnings": "कुल कमाई",
+        "activeBookings": "चालू बुकिंग",
+        "completedPickups": "पूर्ण पिकअप",
+        "farms": "मेरे खेत",
+        "noFarms": "अभी तक कोई खेत नहीं जोड़ा",
+        "addFirstFarm": "अपना पहला खेत जोड़ें",
+        "bookPickup": "पिकअप बुक करें",
+        "viewAll": "सभी देखें"
+    },
+    "farms": {
+        "title": "मेरे खेत",
+        "addFarm": "खेत जोड़ें",
+        "editFarm": "खेत बदलें",
+        "farmName": "खेत का नाम",
+        "farmNamePlaceholder": "जैसे उत्तरी खेत",
+        "cropType": "फसल का प्रकार",
+        "selectCrop": "फसल चुनें",
+        "area": "क्षेत्रफल (एकड़ में)",
+        "areaPlaceholder": "क्षेत्रफल दर्ज करें",
+        "location": "खेत का स्थान",
+        "detectLocation": "मेरा स्थान पता लगाएं",
+        "locationDetected": "स्थान मिल गया",
+        "saveFarm": "खेत सेव करें",
+        "deleteFarm": "खेत हटाएं",
+        "confirmDelete": "क्या आप वाकई इस खेत को हटाना चाहते हैं?"
+    },
+    "crops": {
+        "paddy": "धान",
+        "wheat": "गेहूं",
+        "sugarcane": "गन्ना",
+        "maize": "मक्का",
+        "cotton": "कपास",
+        "other": "अन्य"
+    },
+    "booking": {
+        "title": "पिकअप बुक करें",
+        "selectFarm": "खेत चुनें",
+        "estimation": "अनुमानित पराली",
+        "tonnes": "टन",
+        "estimatedEarning": "अनुमानित कमाई",
+        "harvestDate": "फसल कटाई की तारीख",
+        "selectDate": "तारीख चुनें",
+        "pickupSlot": "पिकअप समय चुनें",
+        "morning": "सुबह (6 AM - 12 PM)",
+        "afternoon": "दोपहर (12 PM - 6 PM)",
+        "confirmBooking": "बुकिंग पक्की करें",
+        "bookingSuccess": "बुकिंग हो गई!",
+        "bookingId": "बुकिंग आईडी"
+    },
+    "bookings": {
+        "title": "मेरी बुकिंग",
+        "active": "चालू",
+        "completed": "पूर्ण",
+        "noBookings": "अभी कोई बुकिंग नहीं",
+        "startBooking": "अपनी पहली पिकअप बुक करें"
+    },
+    "status": {
+        "pending": "बाकी",
+        "confirmed": "पुष्टि",
+        "scheduled": "निर्धारित",
+        "in_progress": "जारी है",
+        "completed": "पूर्ण",
+        "cancelled": "रद्द"
+    },
+    "payments": {
+        "title": "मेरे भुगतान",
+        "history": "भुगतान इतिहास",
+        "pending": "बाकी भुगतान",
+        "received": "प्राप्त राशि",
+        "estimatedAmount": "अनुमानित राशि",
+        "finalAmount": "अंतिम राशि",
+        "afterWeighing": "तुलाई के बाद",
+        "noPayments": "अभी कोई भुगतान नहीं",
+        "transactionId": "लेनदेन आईडी",
+        "paidOn": "भुगतान तिथि"
+    },
+    "profile": {
+        "title": "मेरी प्रोफाइल",
+        "editProfile": "प्रोफाइल बदलें",
+        "language": "भाषा",
+        "hindi": "हिंदी",
+        "english": "English",
+        "logout": "लॉग आउट",
+        "version": "ऐप वर्शन"
+    },
+    "nav": {
+        "home": "होम",
+        "farms": "खेत",
+        "book": "बुक करें",
+        "bookings": "बुकिंग",
+        "profile": "प्रोफाइल"
+    }
+}

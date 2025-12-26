@@ -1,0 +1,138 @@
+{
+    "common": {
+        "loading": "Loading...",
+        "error": "Error",
+        "success": "Success",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "save": "Save",
+        "edit": "Edit",
+        "delete": "Delete",
+        "back": "Back",
+        "next": "Next",
+        "submit": "Submit",
+        "retry": "Retry",
+        "close": "Close"
+    },
+    "auth": {
+        "welcome": "Welcome to AgroCycle",
+        "tagline": "Turn your stubble into income",
+        "enterPhone": "Enter your phone number",
+        "phonePlaceholder": "10-digit mobile number",
+        "sendOtp": "Send OTP",
+        "enterOtp": "Enter OTP",
+        "otpSent": "OTP sent to",
+        "verifyOtp": "Verify OTP",
+        "resendOtp": "Resend OTP",
+        "resendIn": "Resend in",
+        "seconds": "seconds",
+        "invalidPhone": "Please enter a valid 10-digit phone number",
+        "invalidOtp": "Invalid OTP. Please try again"
+    },
+    "kyc": {
+        "title": "Complete Your Profile",
+        "subtitle": "Enter your details to get started",
+        "name": "Your Name",
+        "namePlaceholder": "Enter your full name",
+        "aadhaar": "Aadhaar Number",
+        "aadhaarPlaceholder": "12-digit Aadhaar number",
+        "upiId": "UPI ID (for payments)",
+        "upiPlaceholder": "yourname@upi",
+        "submit": "Complete Registration"
+    },
+    "dashboard": {
+        "title": "My Farm",
+        "greeting": "Hello",
+        "totalEarnings": "Total Earnings",
+        "activeBookings": "Active Bookings",
+        "completedPickups": "Completed Pickups",
+        "farms": "My Farms",
+        "noFarms": "No farms added yet",
+        "addFirstFarm": "Add your first farm",
+        "bookPickup": "Book Pickup",
+        "viewAll": "View All"
+    },
+    "farms": {
+        "title": "My Farms",
+        "addFarm": "Add Farm",
+        "editFarm": "Edit Farm",
+        "farmName": "Farm Name",
+        "farmNamePlaceholder": "e.g. North Field",
+        "cropType": "Crop Type",
+        "selectCrop": "Select crop type",
+        "area": "Area (in acres)",
+        "areaPlaceholder": "Enter area",
+        "location": "Farm Location",
+        "detectLocation": "Detect my location",
+        "locationDetected": "Location detected",
+        "saveFarm": "Save Farm",
+        "deleteFarm": "Delete Farm",
+        "confirmDelete": "Are you sure you want to delete this farm?"
+    },
+    "crops": {
+        "paddy": "Paddy",
+        "wheat": "Wheat",
+        "sugarcane": "Sugarcane",
+        "maize": "Maize",
+        "cotton": "Cotton",
+        "other": "Other"
+    },
+    "booking": {
+        "title": "Book Pickup",
+        "selectFarm": "Select Farm",
+        "estimation": "Estimated Stubble",
+        "tonnes": "tonnes",
+        "estimatedEarning": "Estimated Earning",
+        "harvestDate": "Harvest End Date",
+        "selectDate": "Select date",
+        "pickupSlot": "Select Pickup Slot",
+        "morning": "Morning (6 AM - 12 PM)",
+        "afternoon": "Afternoon (12 PM - 6 PM)",
+        "confirmBooking": "Confirm Booking",
+        "bookingSuccess": "Booking Confirmed!",
+        "bookingId": "Booking ID"
+    },
+    "bookings": {
+        "title": "My Bookings",
+        "active": "Active",
+        "completed": "Completed",
+        "noBookings": "No bookings yet",
+        "startBooking": "Book your first pickup"
+    },
+    "status": {
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "scheduled": "Scheduled",
+        "in_progress": "In Progress",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+    },
+    "payments": {
+        "title": "My Payments",
+        "history": "Payment History",
+        "pending": "Pending Payments",
+        "received": "Amount Received",
+        "estimatedAmount": "Estimated Amount",
+        "finalAmount": "Final Amount",
+        "afterWeighing": "After weighing",
+        "noPayments": "No payments yet",
+        "transactionId": "Transaction ID",
+        "paidOn": "Paid on"
+    },
+    "profile": {
+        "title": "My Profile",
+        "editProfile": "Edit Profile",
+        "language": "Language",
+        "hindi": "हिंदी",
+        "english": "English",
+        "logout": "Logout",
+        "version": "App Version"
+    },
+    "nav": {
+        "home": "Home",
+        "farms": "Farms",
+        "book": "Book",
+        "bookings": "Bookings",
+        "profile": "Profile"
+    }
+}

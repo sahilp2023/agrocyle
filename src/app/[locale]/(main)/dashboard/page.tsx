@@ -39,11 +39,10 @@ const t = {
     },
 };
 
-interface Farm {
+interface FarmPlot {
     _id: string;
-    name: string;
-    cropType: string;
-    areaInAcres: number;
+    plotName: string;
+    areaAcre: number;
 }
 
 interface Booking {
@@ -53,9 +52,10 @@ interface Booking {
     finalPrice?: number;
     createdAt: string;
     farmId: {
-        name: string;
-        cropType: string;
+        plotName: string;
+        areaAcre: number;
     };
+    cropType?: string;
 }
 
 const cropIcons: Record<string, string> = {
@@ -74,10 +74,10 @@ export default function DashboardPage() {
     const text = t[locale];
 
     const [farmerName, setFarmerName] = useState('');
-    const [farms, setFarms] = useState<Farm[]>([]);
-    const [bookings, setBookings] = useState<Booking[]>([]);
     const [stats, setStats] = useState({ earnings: 0, active: 0, completed: 0 });
     const [loading, setLoading] = useState(true);
+    const [plots, setPlots] = useState<FarmPlot[]>([]);
+    const [bookings, setBookings] = useState<Booking[]>([]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -102,13 +102,13 @@ export default function DashboardPage() {
             if (!farmerData) return;
             const farmer = JSON.parse(farmerData);
 
-            // Fetch farms
-            const farmsRes = await fetch(`/api/farms?farmerId=${farmer.id}`, {
+            // Fetch farm plots
+            const plotsRes = await fetch(`/api/farm-plots`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            const farmsData = await farmsRes.json();
-            if (farmsData.success) {
-                setFarms(farmsData.data || []);
+            const plotsData = await plotsRes.json();
+            if (plotsData.success) {
+                setPlots(plotsData.data || []);
             }
 
             // Fetch bookings
@@ -193,19 +193,19 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-semibold text-gray-800">{text.myFarms}</h2>
                         <button
-                            onClick={() => router.push(`/${locale}/farms`)}
+                            onClick={() => router.push(`/${locale}/farm-plots`)}
                             className="text-green-600 text-sm font-medium"
                         >
                             {text.viewAll}
                         </button>
                     </div>
 
-                    {farms.length === 0 ? (
+                    {plots.length === 0 ? (
                         <Card padding="lg" className="text-center">
                             <div className="text-4xl mb-3">🏞️</div>
                             <p className="text-gray-500 mb-4">{text.noFarms}</p>
                             <Button
-                                onClick={() => router.push(`/${locale}/farms`)}
+                                onClick={() => router.push(`/${locale}/farm-plots`)}
                                 icon={<FiPlus />}
                                 size="md"
                             >
@@ -214,21 +214,21 @@ export default function DashboardPage() {
                         </Card>
                     ) : (
                         <div className="space-y-3">
-                            {farms.slice(0, 3).map((farm) => (
+                            {plots.slice(0, 3).map((plot) => (
                                 <Card
-                                    key={farm._id}
+                                    key={plot._id}
                                     padding="md"
                                     interactive
-                                    onClick={() => router.push(`/${locale}/book?farmId=${farm._id}`)}
+                                    onClick={() => router.push(`/${locale}/book?plotId=${plot._id}`)}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">
-                                            {cropIcons[farm.cropType] || '🌱'}
+                                            🌱
                                         </div>
                                         <div className="flex-1">
-                                            <h3 className="font-semibold text-gray-800">{farm.name}</h3>
+                                            <h3 className="font-semibold text-gray-800">{plot.plotName}</h3>
                                             <p className="text-sm text-gray-500">
-                                                {farm.areaInAcres} {text.acres}
+                                                {plot.areaAcre.toFixed(2)} {text.acres}
                                             </p>
                                         </div>
                                         <Button
@@ -237,7 +237,7 @@ export default function DashboardPage() {
                                             icon="🚜"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                router.push(`/${locale}/book?farmId=${farm._id}`);
+                                                router.push(`/${locale}/book?plotId=${plot._id}`);
                                             }}
                                         >
                                             {text.bookPickup}
@@ -272,7 +272,7 @@ export default function DashboardPage() {
                                 <StatusCard
                                     key={booking._id}
                                     status={booking.status}
-                                    title={booking.farmId?.name || 'Farm'}
+                                    title={booking.farmId?.plotName || 'Farm Plot'}
                                     bookingId={booking._id}
                                     estimatedAmount={formatCurrency(booking.estimatedPrice)}
                                     amount={booking.finalPrice ? formatCurrency(booking.finalPrice) : undefined}
@@ -284,7 +284,7 @@ export default function DashboardPage() {
                 </section>
 
                 {/* Quick Book Button */}
-                {farms.length > 0 && (
+                {plots.length > 0 && (
                     <div className="fixed bottom-24 right-4">
                         <button
                             onClick={() => router.push(`/${locale}/book`)}

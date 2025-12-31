@@ -12,9 +12,11 @@ interface StatusCardProps {
     amount?: string;
     estimatedAmount?: string;
     onClick?: () => void;
+    onEdit?: () => void;
+    onCancel?: () => void;
 }
 
-const statusConfig: Record<Status, { icon: React.ReactNode; color: string; bgColor: string }> = {
+const statusConfig: Record<Status, { icon: React.ReactNode; color: string; bgColor: string; label?: string }> = {
     pending: {
         icon: <FiClock className="w-6 h-6" />,
         color: 'text-amber-600',
@@ -56,19 +58,21 @@ export default function StatusCard({
     amount,
     estimatedAmount,
     onClick,
+    onEdit,
+    onCancel,
 }: StatusCardProps) {
     const config = statusConfig[status];
+    const canEdit = ['pending', 'confirmed', 'scheduled'].includes(status);
 
     return (
-        <button
+        <div
             onClick={onClick}
             className={`
         w-full p-4 rounded-2xl border-2
         ${config.bgColor}
-        text-left
+        text-left relative
         transition-all duration-200
-        hover:shadow-lg hover:scale-[1.01]
-        active:scale-[0.99]
+        hover:shadow-lg
       `}
         >
             <div className="flex items-start gap-4">
@@ -82,7 +86,7 @@ export default function StatusCard({
                     <div className="flex items-center justify-between gap-2">
                         <h3 className="font-semibold text-gray-800 truncate">{title}</h3>
                         {bookingId && (
-                            <span className="text-xs text-gray-500">#{bookingId.slice(-6)}</span>
+                            <span className="text-xs text-gray-500">#{bookingId.slice(-6).toUpperCase()}</span>
                         )}
                     </div>
 
@@ -113,8 +117,30 @@ export default function StatusCard({
                             )}
                         </div>
                     )}
+
+                    {/* Actions */}
+                    {canEdit && (onEdit || onCancel) && (
+                        <div className="mt-3 flex gap-2 justify-end">
+                            {onEdit && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                                    className="px-3 py-1 bg-white hover:bg-gray-50 text-gray-600 text-sm font-medium rounded-lg border border-gray-200 shadow-sm"
+                                >
+                                    Reschedule
+                                </button>
+                            )}
+                            {onCancel && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onCancel(); }}
+                                    className="px-3 py-1 bg-white hover:bg-red-50 text-red-600 text-sm font-medium rounded-lg border border-red-200 shadow-sm"
+                                >
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
-        </button>
+        </div>
     );
 }

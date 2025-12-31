@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { name, aadhaarNumber, upiId, language, location } = body;
+        const { name, aadhaarNumber, upiId, language, location, pincode, village, city, state } = body;
 
         await dbConnect();
 
@@ -66,6 +66,10 @@ export async function POST(request: NextRequest) {
         if (upiId) farmer.upiId = upiId;
         if (language) farmer.language = language;
         if (location) farmer.location = location;
+        if (pincode) farmer.pincode = pincode;
+        if (village) farmer.village = village;
+        if (city) farmer.city = city;
+        if (state) farmer.state = state;
 
         // Mark KYC as completed if name and aadhaar are provided
         if (farmer.name && farmer.aadhaarNumber) {
@@ -82,6 +86,10 @@ export async function POST(request: NextRequest) {
             upiId: farmer.upiId,
             kycVerified: farmer.kycVerified,
             language: farmer.language,
+            pincode: farmer.pincode,
+            village: farmer.village,
+            city: farmer.city,
+            state: farmer.state,
         }, 'Profile updated successfully');
     } catch (error) {
         console.error('Update farmer error:', error);

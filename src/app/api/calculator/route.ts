@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
+import dbConnect from '@/lib/db/mongodb';
 import { successResponse, errorResponse } from '@/lib/utils';
 import { calculateStubbleEstimate, getAllCrops, CROP_CONSTANTS } from '@/lib/calculator/stubbleCalculator';
 import type { CropType } from '@/lib/models/Farm';
+import CropPrice from '@/lib/models/CropPrice';
 
 // POST /api/calculator - Calculate stubble estimate
 export async function POST(request: NextRequest) {
@@ -21,7 +23,12 @@ export async function POST(request: NextRequest) {
             return errorResponse('Area must be between 0.1 and 1000 acres', 400);
         }
 
-        const estimate = calculateStubbleEstimate(cropType as CropType, areaInAcres);
+        // Fetch dynamic price
+        await dbConnect();
+        const priceDoc = await CropPrice.findOne({ cropType: cropType.toLowerCase() });
+        const pricePerTonne = priceDoc ? priceDoc.pricePerTonne : undefined;
+
+        const estimate = calculateStubbleEstimate(cropType as CropType, areaInAcres, pricePerTonne);
 
         return successResponse(estimate);
     } catch (error) {

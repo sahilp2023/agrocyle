@@ -9,13 +9,15 @@ export interface IFarmer extends Document {
     language: 'hi' | 'en';
     upiId?: string;
     profilePhoto?: string;
+    // Location fields
+    pincode?: string;
+    village?: string;
+    city?: string;
+    state?: string;
     location?: {
         type: 'Point';
         coordinates: [number, number]; // [longitude, latitude]
         address?: string;
-        village?: string;
-        district?: string;
-        state?: string;
     };
     otp?: string;
     otpExpiry?: Date;
@@ -61,6 +63,25 @@ const FarmerSchema = new Schema<IFarmer>(
         profilePhoto: {
             type: String,
         },
+        pincode: {
+            type: String,
+            validate: {
+                validator: (v: string) => !v || /^\d{6}$/.test(v),
+                message: 'Pincode must be 6 digits',
+            },
+        },
+        village: {
+            type: String,
+            trim: true,
+        },
+        city: {
+            type: String,
+            trim: true,
+        },
+        state: {
+            type: String,
+            trim: true,
+        },
         location: {
             type: {
                 type: String,
@@ -72,9 +93,6 @@ const FarmerSchema = new Schema<IFarmer>(
                 default: [0, 0],
             },
             address: String,
-            village: String,
-            district: String,
-            state: String,
         },
         otp: {
             type: String,

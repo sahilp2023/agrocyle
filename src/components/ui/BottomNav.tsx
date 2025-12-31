@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { FiHome, FiMapPin, FiCalendar, FiClipboard, FiUser } from 'react-icons/fi';
+import { FiHome, FiMapPin, FiCalendar, FiClipboard, FiUser, FiMap } from 'react-icons/fi';
 
 interface NavItem {
     icon: React.ReactNode;
@@ -13,7 +13,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
     { icon: <FiHome />, labelEn: 'Home', labelHi: 'होम', href: '/dashboard' },
-    { icon: <FiMapPin />, labelEn: 'Farms', labelHi: 'खेत', href: '/farms' },
+    { icon: <FiMap />, labelEn: 'Plots', labelHi: 'नक्शा', href: '/farm-plots' },
     { icon: <FiCalendar />, labelEn: 'Book', labelHi: 'बुक करें', href: '/book' },
     { icon: <FiClipboard />, labelEn: 'Bookings', labelHi: 'बुकिंग', href: '/bookings' },
     { icon: <FiUser />, labelEn: 'Profile', labelHi: 'प्रोफाइल', href: '/profile' },

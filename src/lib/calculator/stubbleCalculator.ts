@@ -81,22 +81,24 @@ export interface StubbleEstimate {
  */
 export function calculateStubbleEstimate(
     cropType: CropType,
-    areaInAcres: number
+    areaInAcres: number,
+    dynamicPrice?: number
 ): StubbleEstimate {
     const constants = CROP_CONSTANTS[cropType];
+    const pricePerTonne = dynamicPrice ?? constants.pricePerTonne;
 
     const estimatedTonnes = Number(
         (areaInAcres * constants.yieldFactor * constants.residueRatio).toFixed(2)
     );
 
-    const estimatedPrice = Math.round(estimatedTonnes * constants.pricePerTonne);
+    const estimatedPrice = Math.round(estimatedTonnes * pricePerTonne);
 
     return {
         cropType,
         areaInAcres,
         estimatedTonnes,
         estimatedPrice,
-        pricePerTonne: constants.pricePerTonne,
+        pricePerTonne: pricePerTonne,
         breakdown: {
             yieldFactor: constants.yieldFactor,
             residueRatio: constants.residueRatio,

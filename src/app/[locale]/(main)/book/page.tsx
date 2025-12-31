@@ -10,6 +10,7 @@ const t = {
     hi: {
         title: 'पिकअप बुक करें',
         selectFarm: 'खेत चुनें',
+        selectCrop: 'फसल चुनें',
         estimation: 'अनुमानित पराली',
         tonnes: 'टन',
         estimatedEarning: 'अनुमानित कमाई',
@@ -31,6 +32,7 @@ const t = {
     en: {
         title: 'Book Pickup',
         selectFarm: 'Select Farm',
+        selectCrop: 'Select Crop',
         estimation: 'Estimated Stubble',
         tonnes: 'tonnes',
         estimatedEarning: 'Estimated Earning',
@@ -51,11 +53,10 @@ const t = {
     },
 };
 
-interface Farm {
+interface FarmPlot {
     _id: string;
-    name: string;
-    cropType: string;
-    areaInAcres: number;
+    plotName: string;
+    areaAcre: number;
 }
 
 interface Estimation {
@@ -73,17 +74,26 @@ const cropIcons: Record<string, string> = {
     other: '🌱',
 };
 
+const cropOptions = [
+    { value: 'paddy', label: { hi: 'धान', en: 'Paddy (Rice)' } },
+    { value: 'wheat', label: { hi: 'गेहूं', en: 'Wheat' } },
+    { value: 'sugarcane', label: { hi: 'गन्ना', en: 'Sugarcane' } },
+    { value: 'maize', label: { hi: 'मक्का', en: 'Maize' } },
+    { value: 'cotton', label: { hi: 'कपास', en: 'Cotton' } },
+];
+
 function BookPageContent() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
     const locale = (params.locale as 'hi' | 'en') || 'hi';
     const text = t[locale];
-    const preselectedFarmId = searchParams.get('farmId');
+    const preselectedPlotId = searchParams.get('plotId'); // Changed from farmId
 
     const [step, setStep] = useState<'farm' | 'details' | 'success'>('farm');
-    const [farms, setFarms] = useState<Farm[]>([]);
-    const [selectedFarm, setSelectedFarm] = useState<Farm | null>(null);
+    const [plots, setPlots] = useState<FarmPlot[]>([]);
+    const [selectedPlot, setSelectedPlot] = useState<FarmPlot | null>(null);
+    const [selectedCrop, setSelectedCrop] = useState('paddy');
     const [estimation, setEstimation] = useState<Estimation | null>(null);
     const [harvestDate, setHarvestDate] = useState('');
     const [pickupSlot, setPickupSlot] = useState<'morning' | 'afternoon'>('morning');
@@ -92,55 +102,49 @@ function BookPageContent() {
     const [bookingId, setBookingId] = useState('');
 
     useEffect(() => {
-        loadFarms();
+        loadPlots();
     }, []);
 
     useEffect(() => {
-        if (preselectedFarmId && farms.length > 0) {
-            const farm = farms.find(f => f._id === preselectedFarmId);
-            if (farm) {
-                selectFarm(farm);
+        if (preselectedPlotId && plots.length > 0) {
+            const plot = plots.find(f => f._id === preselectedPlotId);
+            if (plot) {
+                selectPlot(plot);
             }
         }
-    }, [preselectedFarmId, farms]);
+    }, [preselectedPlotId, plots]);
 
-    const loadFarms = async () => {
+    const loadPlots = async () => {
         try {
             const token = localStorage.getItem('token');
-            const farmerData = localStorage.getItem('farmer');
-
-            if (!token || !farmerData) {
+            if (!token) {
                 router.push(`/${locale}/login`);
                 return;
             }
 
-            const farmer = JSON.parse(farmerData);
-            const res = await fetch(`/api/farms?farmerId=${farmer.id}`, {
+            const res = await fetch(`/api/farm-plots`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
             const data = await res.json();
             if (data.success) {
-                setFarms(data.data || []);
+                setPlots(data.data || []);
             }
         } catch (error) {
-            console.error('Failed to load farms:', error);
+            console.error('Failed to load plots:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const selectFarm = async (farm: Farm) => {
-        setSelectedFarm(farm);
-
-        // Get estimation
+    const calculateEstimation = async (plot: FarmPlot, crop: string) => {
         try {
             const res = await fetch('/api/calculator', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    cropType: farm.cropType,
-                    areaInAcres: farm.areaInAcres,
+                    cropType: crop,
+                    areaInAcres: plot.areaAcre, // Match API expectation
                 }),
             });
 
@@ -151,12 +155,25 @@ function BookPageContent() {
         } catch (error) {
             console.error('Failed to get estimation:', error);
         }
+    }
 
+    const selectPlot = (plot: FarmPlot) => {
+        setSelectedPlot(plot);
+        // Default to paddy or keep previous selection? Reset to paddy is safer for new plot.
+        setSelectedCrop('paddy');
+        calculateEstimation(plot, 'paddy');
         setStep('details');
     };
 
+    const handleCropChange = (crop: string) => {
+        setSelectedCrop(crop);
+        if (selectedPlot) {
+            calculateEstimation(selectedPlot, crop);
+        }
+    };
+
     const handleBooking = async () => {
-        if (!selectedFarm || !harvestDate) return;
+        if (!selectedPlot || !harvestDate) return;
 
         setBooking(true);
 
@@ -180,9 +197,10 @@ function BookPageContent() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    farmId: selectedFarm._id,
+                    farmId: selectedPlot._id, // API expects farmId, we map plot._id to it
                     harvestEndDate: harvestDate,
                     scheduledPickupDate: pickup.toISOString(),
+                    cropType: selectedCrop,
                 }),
             });
 
@@ -265,7 +283,7 @@ function BookPageContent() {
     }
 
     return (
-        <div className="safe-area-top">
+        <div className="safe-area-top padding-bottom-safe">
             {/* Header */}
             <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-6 rounded-b-3xl">
                 <h1 className="text-2xl font-bold text-white">{text.title}</h1>
@@ -278,67 +296,65 @@ function BookPageContent() {
             </div>
 
             {/* Content */}
-            <div className="px-4 py-6">
+            <div className="px-4 py-6 pb-24">
                 {step === 'farm' && (
                     <>
                         <h2 className="text-lg font-semibold text-gray-800 mb-4">
                             {text.selectFarm}
                         </h2>
 
-                        {farms.length === 0 ? (
+                        {plots.length === 0 ? (
                             <Card padding="lg" className="text-center">
                                 <div className="text-4xl mb-3">🏞️</div>
                                 <p className="text-gray-500 mb-4">{text.noFarms}</p>
-                                <Button onClick={() => router.push(`/${locale}/farms`)}>
+                                <Button onClick={() => router.push(`/${locale}/farm-plots`)}>
                                     {text.addFarm}
                                 </Button>
                             </Card>
                         ) : (
                             <div className="space-y-3">
-                                {farms.map((farm) => (
-                                    <Card
-                                        key={farm._id}
-                                        padding="md"
-                                        interactive
-                                        onClick={() => selectFarm(farm)}
+                                {plots.map((plot) => (
+                                    <div
+                                        key={plot._id}
+                                        onClick={() => selectPlot(plot)}
+                                        className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm active:scale-95 transition-transform flex items-center gap-4"
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">
-                                                {cropIcons[farm.cropType] || '🌱'}
-                                            </div>
-                                            <div className="flex-1">
-                                                <h3 className="font-semibold text-gray-800">{farm.name}</h3>
-                                                <p className="text-sm text-gray-500">
-                                                    {farm.areaInAcres} {text.acres}
-                                                </p>
-                                            </div>
-                                            <FiChevronRight className="text-gray-400" />
+                                        <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">
+                                            {/* Default icon since we don't know crop yet, usually paddy/wheat */}
+                                            🌱
                                         </div>
-                                    </Card>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-gray-800">{plot.plotName}</h3>
+                                            <p className="text-sm text-gray-500">
+                                                {plot.areaAcre.toFixed(2)} {text.acres}
+                                            </p>
+                                        </div>
+                                        <FiChevronRight className="text-gray-400" />
+                                    </div>
                                 ))}
                             </div>
                         )}
                     </>
                 )}
 
-                {step === 'details' && selectedFarm && (
+                {step === 'details' && selectedPlot && (
                     <div className="space-y-6">
                         {/* Selected Farm */}
                         <Card padding="md">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center text-3xl">
-                                    {cropIcons[selectedFarm.cropType] || '🌱'}
+                                    {cropIcons[selectedCrop] || '🌱'}
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-semibold text-gray-800">{selectedFarm.name}</h3>
+                                    <h3 className="font-semibold text-gray-800">{selectedPlot.plotName}</h3>
                                     <p className="text-sm text-gray-500">
-                                        {selectedFarm.areaInAcres} {text.acres}
+                                        {selectedPlot.areaAcre.toFixed(2)} {text.acres}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => {
                                         setStep('farm');
-                                        setSelectedFarm(null);
+                                        setSelectedPlot(null);
                                         setEstimation(null);
                                     }}
                                     className="text-green-600 text-sm font-medium"
@@ -347,6 +363,30 @@ function BookPageContent() {
                                 </button>
                             </div>
                         </Card>
+
+                        {/* Crop Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                {text.selectCrop}
+                            </label>
+                            <div className="flex gap-2 overflow-x-auto pb-2 noscroll">
+                                {cropOptions.map((crop) => (
+                                    <button
+                                        key={crop.value}
+                                        onClick={() => handleCropChange(crop.value)}
+                                        className={`
+                                            flex-shrink-0 px-4 py-2 rounded-full border text-sm font-medium transition-colors
+                                            ${selectedCrop === crop.value
+                                                ? 'bg-green-600 text-white border-green-600'
+                                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                            }
+                                        `}
+                                    >
+                                        {crop.label[locale] || crop.label.en}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
                         {/* Estimation */}
                         {estimation && (

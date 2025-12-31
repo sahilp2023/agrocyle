@@ -12,10 +12,12 @@ export interface IBooking extends Document {
     _id: mongoose.Types.ObjectId;
     farmerId: mongoose.Types.ObjectId;
     farmId: mongoose.Types.ObjectId;
+    hubId?: mongoose.Types.ObjectId;
     harvestEndDate: Date;
     scheduledPickupDate?: Date;
     actualPickupDate?: Date;
     status: BookingStatus;
+    cropType: string;
     // Estimates (shown to farmer before pickup)
     estimatedStubbleTonnes: number;
     estimatedPrice: number;
@@ -40,8 +42,13 @@ const BookingSchema = new Schema<IBooking>(
         },
         farmId: {
             type: Schema.Types.ObjectId,
-            ref: 'Farm',
+            ref: 'FarmPlot',
             required: true,
+            index: true,
+        },
+        hubId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Hub',
             index: true,
         },
         harvestEndDate: {
@@ -59,6 +66,11 @@ const BookingSchema = new Schema<IBooking>(
             enum: ['pending', 'confirmed', 'scheduled', 'in_progress', 'completed', 'cancelled'],
             default: 'pending',
             index: true,
+        },
+        cropType: {
+            type: String,
+            required: true,
+            default: 'paddy'
         },
         estimatedStubbleTonnes: {
             type: Number,

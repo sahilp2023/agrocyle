@@ -1,7 +1,10 @@
 import { NextRequest } from 'next/server';
 import dbConnect from '@/lib/db/mongodb';
 import Booking from '@/lib/models/Booking';
-import Farm from '@/lib/models/Farm';
+import FarmPlot from '@/lib/models/FarmPlot';
+import CropPrice from '@/lib/models/CropPrice';
+import Hub from '@/lib/models/Hub';
+import Farmer from '@/lib/models/Farmer';
 import { successResponse, errorResponse, getPaginationParams, createPaginationMeta } from '@/lib/utils';
 import { getFarmerIdFromRequest } from '@/lib/utils/auth';
 import { calculateStubbleEstimate } from '@/lib/calculator/stubbleCalculator';
@@ -41,7 +44,7 @@ export async function GET(request: NextRequest) {
 
         const total = await Booking.countDocuments(query);
         const bookings = await Booking.find(query)
-            .populate('farmId', 'name cropType areaInAcres location')
+            .populate('farmId', 'plotName areaAcre areaHa')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { farmId, harvestEndDate, scheduledPickupDate, farmerNotes } = body;
+        const { farmId, harvestEndDate, scheduledPickupDate, farmerNotes, cropType = 'paddy' } = body;
 
         if (!farmId || !harvestEndDate) {
             return errorResponse('Farm ID and harvest end date are required', 400);
@@ -74,32 +77,51 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Get farm details for estimation
-        const farm = await Farm.findOne({ _id: farmId, farmerId, isActive: true });
-        if (!farm) {
-            return errorResponse('Farm not found', 404);
+        // Get farm plot details for estimation
+        const farmPlot = await FarmPlot.findOne({ _id: farmId, farmerId });
+        if (!farmPlot) {
+            return errorResponse('Farm Plot not found', 404);
         }
 
-        // Calculate stubble estimate
+        // Fetch dynamic price
+        const priceDoc = await CropPrice.findOne({ cropType: (cropType as string).toLowerCase() });
+        const pricePerTonne = priceDoc ? priceDoc.pricePerTonne : undefined;
+
         const estimate = calculateStubbleEstimate(
-            farm.cropType as CropType,
-            farm.areaInAcres
+            cropType as CropType,
+            farmPlot.areaAcre,
+            pricePerTonne
         );
+
+        // Find hub for this farmer based on pincode
+        const farmer = await Farmer.findById(farmerId);
+        let hubId = undefined;
+        if (farmer?.pincode) {
+            const hub = await Hub.findOne({
+                servicePincodes: farmer.pincode,
+                isActive: true
+            });
+            if (hub) {
+                hubId = hub._id;
+            }
+        }
 
         // Create booking
         const booking = await Booking.create({
             farmerId,
             farmId,
+            hubId,
             harvestEndDate: new Date(harvestEndDate),
             scheduledPickupDate: scheduledPickupDate ? new Date(scheduledPickupDate) : undefined,
             status: 'pending',
+            cropType,
             estimatedStubbleTonnes: estimate.estimatedTonnes,
             estimatedPrice: estimate.estimatedPrice,
             farmerNotes,
         });
 
         // Populate farm details
-        await booking.populate('farmId', 'name cropType areaInAcres');
+        await booking.populate('farmId', 'plotName areaAcre');
 
         return successResponse(booking, 'Booking created successfully');
     } catch (error) {
@@ -144,16 +166,23 @@ export async function PATCH(request: NextRequest) {
         if (actualStubbleTonnes !== undefined) {
             booking.actualStubbleTonnes = actualStubbleTonnes;
 
-            // Get farm to calculate final price
-            const farm = await Farm.findById(booking.farmId);
-            if (farm) {
-                const estimate = calculateStubbleEstimate(farm.cropType as CropType, farm.areaInAcres);
-                booking.finalPrice = Math.round(actualStubbleTonnes * estimate.pricePerTonne);
+            // Fetch dynamic price
+            const priceDoc = await CropPrice.findOne({ cropType: booking.cropType.toLowerCase() });
+            const pricePerTonne = priceDoc ? priceDoc.pricePerTonne : undefined;
+
+            const priceEstimate = calculateStubbleEstimate(
+                (booking.cropType as CropType) || 'paddy',
+                1,
+                pricePerTonne
+            );
+
+            if (priceEstimate && priceEstimate.pricePerTonne) {
+                booking.finalPrice = Math.round(actualStubbleTonnes * priceEstimate.pricePerTonne);
             }
         }
 
         await booking.save();
-        await booking.populate('farmId', 'name cropType areaInAcres');
+        await booking.populate('farmId', 'plotName areaAcre');
 
         return successResponse(booking, 'Booking updated successfully');
     } catch (error) {

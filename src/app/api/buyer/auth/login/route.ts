@@ -1,13 +1,12 @@
 import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/db/mongodb';
-import HubManager from '@/lib/models/HubManager';
-import Hub from '@/lib/models/Hub';
+import Buyer from '@/lib/models/Buyer';
 import { successResponse, errorResponse } from '@/lib/utils';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'agrocycle-secret-key-change-in-production';
 
-// POST /api/hub/auth/login - Hub Manager Login
+// POST /api/buyer/auth/login - Buyer Login
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -19,36 +18,37 @@ export async function POST(request: NextRequest) {
 
         await dbConnect();
 
-        // Ensure Hub model is registered before populate
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        Hub;
-
-        // Find hub manager by email
-        const manager = await HubManager.findOne({
+        // Find buyer by email
+        const buyer = await Buyer.findOne({
             email: email.toLowerCase().trim(),
             isActive: true
-        }).populate('hubId', 'name code city');
+        });
 
-        if (!manager) {
+        if (!buyer) {
             return errorResponse('Invalid email or password', 401);
         }
 
+        // Check if agreement is accepted
+        if (!buyer.agreementAccepted) {
+            return errorResponse('Please accept the agreement before logging in', 403);
+        }
+
         // Verify password
-        const isMatch = await manager.comparePassword(password);
+        const isMatch = await buyer.comparePassword(password);
         if (!isMatch) {
             return errorResponse('Invalid email or password', 401);
         }
 
-        // Update last login (use updateOne to avoid model issues)
-        await HubManager.updateOne({ _id: manager._id }, { lastLogin: new Date() });
+        // Update last login
+        await Buyer.updateOne({ _id: buyer._id }, { lastLogin: new Date() });
 
         // Generate JWT token
         const token = jwt.sign(
             {
-                id: manager._id.toString(),
-                email: manager.email,
-                hubId: manager.hubId._id.toString(),
-                role: 'hub_manager'
+                id: buyer._id.toString(),
+                email: buyer.email,
+                companyCode: buyer.companyCode,
+                role: 'buyer'
             },
             JWT_SECRET,
             { expiresIn: '7d' }
@@ -56,21 +56,25 @@ export async function POST(request: NextRequest) {
 
         return successResponse({
             token,
-            manager: {
-                id: manager._id,
-                name: manager.name,
-                email: manager.email,
-                hub: manager.hubId,
+            buyer: {
+                id: buyer._id,
+                companyName: buyer.companyName,
+                companyCode: buyer.companyCode,
+                contactPerson: buyer.contactPerson,
+                email: buyer.email,
+                phone: buyer.phone,
+                plantCity: buyer.plantCity,
+                plantState: buyer.plantState,
             }
         }, 'Login successful');
     } catch (error) {
-        console.error('Hub Manager login error:', error);
+        console.error('Buyer login error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return errorResponse(`Login failed: ${errorMessage}`, 500);
     }
 }
 
-// GET /api/hub/auth/login - Verify token and get manager info
+// GET /api/buyer/auth/login - Verify token and get buyer info
 export async function GET(request: NextRequest) {
     try {
         const authHeader = request.headers.get('authorization');
@@ -81,24 +85,27 @@ export async function GET(request: NextRequest) {
         const token = authHeader.substring(7);
 
         try {
-            const decoded = jwt.verify(token, JWT_SECRET) as { id: string; hubId: string };
+            const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
 
             await dbConnect();
 
-            const manager = await HubManager.findById(decoded.id)
-                .select('-passwordHash')
-                .populate('hubId', 'name code city state');
+            const buyer = await Buyer.findById(decoded.id)
+                .select('-passwordHash');
 
-            if (!manager || !manager.isActive) {
-                return errorResponse('Manager not found or inactive', 401);
+            if (!buyer || !buyer.isActive) {
+                return errorResponse('Buyer not found or inactive', 401);
             }
 
             return successResponse({
-                manager: {
-                    id: manager._id,
-                    name: manager.name,
-                    email: manager.email,
-                    hub: manager.hubId,
+                buyer: {
+                    id: buyer._id,
+                    companyName: buyer.companyName,
+                    companyCode: buyer.companyCode,
+                    contactPerson: buyer.contactPerson,
+                    email: buyer.email,
+                    phone: buyer.phone,
+                    plantCity: buyer.plantCity,
+                    plantState: buyer.plantState,
                 }
             });
         } catch {

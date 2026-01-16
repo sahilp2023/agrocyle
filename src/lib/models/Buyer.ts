@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 export interface IBuyer extends Document {
     _id: mongoose.Types.ObjectId;
@@ -7,6 +8,7 @@ export interface IBuyer extends Document {
     contactPerson: string;
     email: string;
     phone: string;
+    passwordHash: string;
     gstNumber?: string;
     panNumber?: string;
     plantAddress: string;
@@ -19,9 +21,13 @@ export interface IBuyer extends Document {
     pricePerTonne: number;
     minimumOrderTonnes: number;
     paymentTermsDays: number;
+    agreementAccepted: boolean;
+    agreementAcceptedAt?: Date;
     isActive: boolean;
+    lastLogin?: Date;
     createdAt: Date;
     updatedAt: Date;
+    comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 const BuyerSchema = new Schema<IBuyer>(
@@ -46,6 +52,7 @@ const BuyerSchema = new Schema<IBuyer>(
         email: {
             type: String,
             required: true,
+            unique: true,
             lowercase: true,
             trim: true,
         },
@@ -53,6 +60,10 @@ const BuyerSchema = new Schema<IBuyer>(
             type: String,
             required: true,
             trim: true,
+        },
+        passwordHash: {
+            type: String,
+            required: true,
         },
         gstNumber: {
             type: String,
@@ -106,9 +117,19 @@ const BuyerSchema = new Schema<IBuyer>(
             type: Number,
             default: 30,
         },
+        agreementAccepted: {
+            type: Boolean,
+            default: false,
+        },
+        agreementAcceptedAt: {
+            type: Date,
+        },
         isActive: {
             type: Boolean,
             default: true,
+        },
+        lastLogin: {
+            type: Date,
         },
     },
     {
@@ -116,7 +137,22 @@ const BuyerSchema = new Schema<IBuyer>(
     }
 );
 
+// Hash password before saving
+BuyerSchema.pre('save', async function () {
+    if (!this.isModified('passwordHash')) {
+        return;
+    }
+    const salt = await bcrypt.genSalt(10);
+    this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
+});
+
+// Compare password method
+BuyerSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
+    return bcrypt.compare(candidatePassword, this.passwordHash);
+};
+
 BuyerSchema.index({ companyCode: 1 });
+BuyerSchema.index({ email: 1 });
 BuyerSchema.index({ isActive: 1 });
 
 const Buyer: Model<IBuyer> =

@@ -4,47 +4,49 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-    FiHome, FiServer, FiMessageCircle, FiUsers, FiBarChart2,
-    FiLogOut, FiMenu, FiX, FiShield, FiBriefcase, FiPackage
+    FiHome, FiShoppingCart, FiTruck, FiSettings,
+    FiLogOut, FiMenu, FiX, FiPlusCircle, FiMessageCircle
 } from 'react-icons/fi';
 
-interface AdminUser {
+interface Buyer {
     id: string;
-    name: string;
+    companyName: string;
+    companyCode: string;
+    contactPerson: string;
     email: string;
-    role: string;
+    plantCity: string;
+    plantState: string;
 }
 
 const navItems = [
-    { href: '/admin', label: 'Dashboard', icon: FiHome },
-    { href: '/admin/hubs', label: 'Hub Monitoring', icon: FiServer },
-    { href: '/admin/buyers', label: 'Buyers', icon: FiBriefcase },
-    { href: '/admin/buyer-orders', label: 'Buyer Orders', icon: FiPackage },
-    { href: '/admin/tickets', label: 'Support Tickets', icon: FiMessageCircle },
-    { href: '/admin/farmers', label: 'All Farmers', icon: FiUsers },
-    { href: '/admin/analytics', label: 'Analytics', icon: FiBarChart2 },
+    { href: '/buyer/dashboard', label: 'Dashboard', icon: FiHome },
+    { href: '/buyer/orders/create', label: 'Create Order', icon: FiPlusCircle },
+    { href: '/buyer/orders', label: 'My Orders', icon: FiShoppingCart },
+    { href: '/buyer/deliveries', label: 'Deliveries', icon: FiTruck },
+    { href: '/buyer/quality', label: 'Quality Settings', icon: FiSettings },
+    { href: '/buyer/support', label: 'Support', icon: FiMessageCircle },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function BuyerDashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
-    const [admin, setAdmin] = useState<AdminUser | null>(null);
+    const [buyer, setBuyer] = useState<Buyer | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('adminToken');
-        const adminData = localStorage.getItem('adminUser');
+        const token = localStorage.getItem('buyerToken');
+        const buyerData = localStorage.getItem('buyer');
 
-        if (!token || !adminData) {
-            router.push('/admin/login');
+        if (!token || !buyerData) {
+            router.push('/buyer/login');
             return;
         }
 
         try {
-            setAdmin(JSON.parse(adminData));
+            setBuyer(JSON.parse(buyerData));
         } catch {
-            router.push('/admin/login');
+            router.push('/buyer/login');
             return;
         }
 
@@ -52,28 +54,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, [router]);
 
     const handleLogout = () => {
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminUser');
-        router.push('/admin/login');
+        localStorage.removeItem('buyerToken');
+        localStorage.removeItem('buyer');
+        router.push('/buyer/login');
     };
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-                <div className="text-center">
-                    <FiShield className="w-12 h-12 text-purple-500 mx-auto animate-pulse" />
-                    <p className="text-purple-300 mt-4">Loading...</p>
-                </div>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="animate-spin text-4xl">🏭</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 flex">
+        <div className="min-h-screen bg-gray-50 flex">
             {/* Mobile Overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -81,24 +80,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Sidebar */}
             <aside className={`
                 fixed lg:static inset-y-0 left-0 z-50
-                w-64 bg-slate-800/50 backdrop-blur-xl border-r border-white/10 flex flex-col
+                w-64 bg-white border-r border-gray-200 flex flex-col
                 transform transition-transform duration-300 ease-in-out
                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
             `}>
                 {/* Logo */}
-                <div className="h-16 border-b border-white/10 flex items-center justify-between px-4">
+                <div className="h-16 border-b border-gray-200 flex items-center justify-between px-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-                            <FiShield className="w-5 h-5 text-white" />
+                        <div className="w-9 h-9 bg-emerald-500 rounded-lg flex items-center justify-center">
+                            <span className="text-lg">🏭</span>
                         </div>
                         <div>
-                            <h1 className="font-bold text-white text-sm">AgroCycle</h1>
-                            <p className="text-xs text-purple-300">Super Admin</p>
+                            <h1 className="font-bold text-gray-800 text-sm">AgroCycle Buyer</h1>
+                            <p className="text-xs text-gray-500">{buyer?.companyCode || 'Buyer Portal'}</p>
                         </div>
                     </div>
                     <button
                         onClick={() => setSidebarOpen(false)}
-                        className="lg:hidden p-2 text-gray-400"
+                        className="lg:hidden p-2 text-gray-500"
                     >
                         <FiX />
                     </button>
@@ -108,7 +107,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <nav className="flex-1 px-3 py-4 overflow-y-auto">
                     <div className="space-y-1">
                         {navItems.map((item) => {
-                            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+                            const isActive = pathname === item.href ||
+                                (item.href !== '/buyer/dashboard' && pathname.startsWith(item.href));
                             return (
                                 <Link
                                     key={item.href}
@@ -118,8 +118,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         flex items-center gap-3 px-4 py-3 rounded-xl
                                         text-sm font-medium transition-all duration-200
                                         ${isActive
-                                            ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20'
-                                            : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                         }
                                     `}
                                 >
@@ -132,24 +132,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 {/* User Info */}
-                <div className="p-3 border-t border-white/10">
-                    <div className="flex items-center gap-3 p-2 rounded-xl bg-white/5">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                <div className="p-3 border-t border-gray-200 bg-gray-50/50">
+                    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-white transition-colors">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-sm">
                             <span className="text-white font-semibold text-sm">
-                                {admin?.name?.charAt(0) || 'A'}
+                                {buyer?.companyName?.charAt(0) || 'B'}
                             </span>
                         </div>
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">
-                                {admin?.name || 'Admin'}
+                            <p className="text-sm font-semibold text-gray-800 truncate">
+                                {buyer?.contactPerson || 'Buyer'}
                             </p>
-                            <p className="text-xs text-purple-300 truncate">
-                                {admin?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                            <p className="text-xs text-gray-500 truncate">
+                                {buyer?.plantCity}, {buyer?.plantState}
                             </p>
                         </div>
                         <button
                             onClick={handleLogout}
-                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             title="Logout"
                         >
                             <FiLogOut className="w-5 h-5" />
@@ -161,17 +161,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-w-0">
                 {/* Top Bar */}
-                <header className="h-16 bg-slate-800/30 backdrop-blur-xl border-b border-white/10 flex items-center px-4 lg:px-6">
+                <header className="h-16 bg-white border-b border-gray-200 flex items-center px-4 lg:px-6">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="lg:hidden p-2 -ml-2 text-gray-400 hover:text-white"
+                        className="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700"
                     >
                         <FiMenu className="w-6 h-6" />
                     </button>
                     <div className="flex-1" />
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                        <span className="text-green-400 font-medium">System Online</span>
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <span className="hidden sm:inline">{buyer?.companyName}</span>
+                        <span className="w-2 h-2 bg-emerald-400 rounded-full" />
+                        <span className="text-emerald-600 font-medium">Online</span>
                     </div>
                 </header>
 

@@ -1,36 +1,57 @@
 import { NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/db/mongodb';
 import SupportTicket from '@/lib/models/SupportTicket';
 import Farmer from '@/lib/models/Farmer';
+import HubManager from '@/lib/models/HubManager';
 import { successResponse, errorResponse } from '@/lib/utils';
 import { verifyToken } from '@/lib/utils/auth';
 import { getHubManagerFromRequest } from '@/lib/utils/hubAuth';
+import { getAdminFromRequest } from '@/lib/utils/adminAuth';
 
-// Ensure Farmer model is registered
+// Ensure models are registered
 void Farmer;
+void HubManager;
 
 // Helper to get user from request
 async function getUserFromRequest(request: NextRequest) {
+    await dbConnect();
+
+    // Try admin first
+    const admin = getAdminFromRequest(request);
+    if (admin) {
+        return {
+            id: admin.id,
+            type: 'admin' as const,
+            name: 'Admin',
+            isAdmin: true,
+        };
+    }
+
+    // Try hub manager
     const hubManager = getHubManagerFromRequest(request);
     if (hubManager) {
+        const manager = await HubManager.findById(hubManager.id).select('name');
         return {
             id: hubManager.id,
             type: 'hub_manager' as const,
-            name: 'Hub Manager',
+            name: manager?.name || 'Hub Manager',
             isAdmin: false,
         };
     }
 
+    // Try farmer token
     const authHeader = request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
             const decoded = verifyToken(token);
             if (decoded?.farmerId) {
+                const farmer = await Farmer.findById(decoded.farmerId).select('name');
                 return {
                     id: decoded.farmerId,
                     type: 'farmer' as const,
-                    name: 'Farmer',
+                    name: farmer?.name || 'Farmer',
                     isAdmin: false,
                 };
             }

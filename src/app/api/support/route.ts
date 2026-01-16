@@ -1,23 +1,30 @@
 import { NextRequest } from 'next/server';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/db/mongodb';
 import SupportTicket from '@/lib/models/SupportTicket';
 import Farmer from '@/lib/models/Farmer';
+import HubManager from '@/lib/models/HubManager';
 import { successResponse, errorResponse } from '@/lib/utils';
 import { verifyToken } from '@/lib/utils/auth';
 import { getHubManagerFromRequest } from '@/lib/utils/hubAuth';
 
 // Ensure Farmer model is registered
 void Farmer;
+void HubManager;
 
 // Helper to get user from request (farmer or hub manager)
 async function getUserFromRequest(request: NextRequest) {
+    await dbConnect();
+
     // Try hub manager first
     const hubManager = getHubManagerFromRequest(request);
     if (hubManager) {
+        // Fetch manager name from database
+        const manager = await HubManager.findById(hubManager.id).select('name');
         return {
             id: hubManager.id,
             type: 'hub_manager' as const,
-            name: 'Hub Manager',
+            name: manager?.name || 'Hub Manager',
             hubId: hubManager.hubId,
         };
     }
@@ -30,7 +37,6 @@ async function getUserFromRequest(request: NextRequest) {
             const decoded = verifyToken(token);
             if (decoded && decoded.farmerId) {
                 // Get farmer name
-                await dbConnect();
                 const farmer = await Farmer.findById(decoded.farmerId).select('name');
                 return {
                     id: decoded.farmerId,
@@ -66,7 +72,7 @@ export async function GET(request: NextRequest) {
 
         // If not requesting all (for super admin), filter by user
         if (!all) {
-            query.createdBy = user.id;
+            query.createdBy = new mongoose.Types.ObjectId(user.id);
             query.createdByType = user.type;
         }
 
@@ -108,23 +114,29 @@ export async function POST(request: NextRequest) {
         const count = await SupportTicket.countDocuments();
         const ticketNumber = `TKT-${year}-${String(count + 1).padStart(4, '0')}`;
 
-        const ticket = await SupportTicket.create({
+        // Create ObjectId properly
+        const createdById = new mongoose.Types.ObjectId(user.id);
+
+        const ticketData = {
             ticketNumber,
-            createdBy: user.id,
+            createdBy: createdById,
             createdByType: user.type,
             createdByName: user.name,
-            hubId: user.hubId,
+            hubId: user.hubId ? new mongoose.Types.ObjectId(user.hubId) : undefined,
             category,
             subject,
             description,
             priority: priority || 'medium',
-            status: 'open',
+            status: 'open' as const,
             messages: [],
-        });
+        };
+
+        const ticket = await SupportTicket.create(ticketData);
 
         return successResponse(ticket, 'Ticket created successfully');
     } catch (error) {
         console.error('Create support ticket error:', error);
-        return errorResponse('Failed to create ticket', 500);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return errorResponse(`Failed to create ticket: ${errorMessage}`, 500);
     }
 }

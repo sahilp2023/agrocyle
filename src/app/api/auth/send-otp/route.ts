@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
         console.log(`📱 OTP for ${formattedPhone}: ${otp}`);
 
         return successResponse(
-            { phone: formattedPhone },
+            { phone: formattedPhone, otp },
             'OTP sent successfully'
         );
     } catch (error) {

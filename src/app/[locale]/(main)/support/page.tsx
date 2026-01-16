@@ -129,7 +129,7 @@ export default function FarmerSupportPage() {
                 setPriority('medium');
                 await loadTickets();
             } else {
-                setCreateError(data.message || 'Failed to create ticket');
+                setCreateError(data.error || data.message || 'Failed to create ticket');
             }
         } catch (error) {
             console.error('Failed to create ticket:', error);
@@ -329,8 +329,8 @@ export default function FarmerSupportPage() {
                                             type="button"
                                             onClick={() => setCategory(key)}
                                             className={`p-3 rounded-xl border-2 text-left transition-all ${category === key
-                                                    ? 'border-green-500 bg-green-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                ? 'border-green-500 bg-green-50'
+                                                : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                         >
                                             <span className="text-sm font-medium">{label}</span>
@@ -353,8 +353,8 @@ export default function FarmerSupportPage() {
                                             type="button"
                                             onClick={() => setPriority(p.key)}
                                             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${priority === p.key
-                                                    ? 'bg-green-600 text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {p.emoji} {p.label}
@@ -469,8 +469,8 @@ export default function FarmerSupportPage() {
                                 <div
                                     key={idx}
                                     className={`rounded-xl p-4 ${msg.sender === 'admin'
-                                            ? 'bg-blue-50 ml-8'
-                                            : 'bg-gray-50 mr-8'
+                                        ? 'bg-blue-50 ml-8'
+                                        : 'bg-gray-50 mr-8'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between mb-2">

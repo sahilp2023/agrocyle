@@ -87,6 +87,9 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (data.success) {
+                if (data.data?.otp) {
+                    console.log('Use this OTP to login:', data.data.otp);
+                }
                 setStep('otp');
                 startCountdown();
             } else {

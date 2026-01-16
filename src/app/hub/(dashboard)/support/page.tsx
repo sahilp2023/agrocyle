@@ -126,7 +126,7 @@ export default function HubSupportPage() {
                 setPriority('medium');
                 await loadTickets();
             } else {
-                setCreateError(data.message || 'Failed to create ticket');
+                setCreateError(data.error || data.message || 'Failed to create ticket');
             }
         } catch (error) {
             console.error('Failed to create ticket:', error);
@@ -250,8 +250,8 @@ export default function HubSupportPage() {
                         key={status}
                         onClick={() => setStatusFilter(status)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${statusFilter === status
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                     >
                         {status === 'all' ? 'All Tickets' : status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -297,8 +297,8 @@ export default function HubSupportPage() {
                                             </p>
                                         </div>
                                         <span className={`text-xs px-2 py-1 rounded ${ticket.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                                ticket.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                                                    'bg-gray-100 text-gray-600'
+                                            ticket.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                                'bg-gray-100 text-gray-600'
                                             }`}>
                                             {ticket.priority}
                                         </span>
@@ -335,8 +335,8 @@ export default function HubSupportPage() {
                                             type="button"
                                             onClick={() => setCategory(key)}
                                             className={`p-3 rounded-xl border-2 text-left transition-all ${category === key
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                ? 'border-blue-500 bg-blue-50'
+                                                : 'border-gray-200 hover:border-gray-300'
                                                 }`}
                                         >
                                             <span className="text-sm font-medium">{label}</span>
@@ -355,9 +355,9 @@ export default function HubSupportPage() {
                                             type="button"
                                             onClick={() => setPriority(p)}
                                             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${priority === p
-                                                    ? p === 'high' ? 'bg-red-500 text-white' :
-                                                        p === 'medium' ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white'
-                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? p === 'high' ? 'bg-red-500 text-white' :
+                                                    p === 'medium' ? 'bg-amber-500 text-white' : 'bg-gray-500 text-white'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                 }`}
                                         >
                                             {p.charAt(0).toUpperCase() + p.slice(1)}
@@ -472,8 +472,8 @@ export default function HubSupportPage() {
                                 <div
                                     key={idx}
                                     className={`rounded-xl p-4 ${msg.sender === 'admin'
-                                            ? 'bg-green-50 ml-8'
-                                            : 'bg-gray-50 mr-8'
+                                        ? 'bg-green-50 ml-8'
+                                        : 'bg-gray-50 mr-8'
                                         }`}
                                 >
                                     <div className="flex items-center justify-between mb-2">

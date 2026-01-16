@@ -89,16 +89,6 @@ const BuyerOrderSchema = new Schema<IBuyerOrder>(
     }
 );
 
-// Auto-generate order number
-BuyerOrderSchema.pre('save', async function (next) {
-    if (!this.orderNumber) {
-        const year = new Date().getFullYear();
-        const count = await mongoose.models.BuyerOrder.countDocuments() + 1;
-        this.orderNumber = `ORD-${year}-${String(count).padStart(4, '0')}`;
-    }
-    next();
-});
-
 BuyerOrderSchema.index({ buyerId: 1, status: 1 });
 BuyerOrderSchema.index({ hubId: 1 });
 BuyerOrderSchema.index({ orderNumber: 1 });

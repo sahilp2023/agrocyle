@@ -20,6 +20,10 @@ export interface IPayout extends Document {
     breakdown: IPayoutBreakdown;
     status: PayoutStatus;
     transactionId?: string;
+    // Razorpay fields
+    razorpayPayoutId?: string;
+    razorpayFundAccountId?: string;
+    razorpayContactId?: string;
     processedAt?: Date;
     processedBy?: mongoose.Types.ObjectId;
     notes?: string;
@@ -70,6 +74,17 @@ const PayoutSchema = new Schema<IPayout>(
         transactionId: {
             type: String,
             trim: true,
+        },
+        // Razorpay payout fields
+        razorpayPayoutId: {
+            type: String,
+            sparse: true,
+        },
+        razorpayFundAccountId: {
+            type: String,
+        },
+        razorpayContactId: {
+            type: String,
         },
         processedAt: {
             type: Date,

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiPlus, FiFilter, FiRefreshCw } from 'react-icons/fi';
+import { FiPlus, FiFilter, FiRefreshCw, FiCreditCard, FiCheck } from 'react-icons/fi';
+import RazorpayPaymentButton from '@/components/payments/RazorpayPaymentButton';
 
 interface Order {
     _id: string;
@@ -11,6 +12,8 @@ interface Order {
     pricePerTonne: number;
     totalAmount: number;
     status: string;
+    paymentStatus: string;
+    paidAmount: number;
     requestedDate: string;
     hubId: { name: string; city: string; code: string };
     createdAt: string;
@@ -126,8 +129,8 @@ export default function BuyerOrdersPage() {
                                 key={filter.value}
                                 onClick={() => setStatusFilter(filter.value)}
                                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === filter.value
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                     }`}
                             >
                                 {filter.label}
@@ -173,7 +176,7 @@ export default function BuyerOrdersPage() {
                                     <th className="px-6 py-4">Hub</th>
                                     <th className="px-6 py-4">Quantity</th>
                                     <th className="px-6 py-4">Amount</th>
-                                    <th className="px-6 py-4">Requested Date</th>
+                                    <th className="px-6 py-4">Payment</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Created</th>
                                 </tr>
@@ -198,8 +201,27 @@ export default function BuyerOrdersPage() {
                                         <td className="px-6 py-4 text-sm text-gray-700">
                                             {formatCurrency(order.totalAmount)}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
-                                            {formatDate(order.requestedDate)}
+                                        <td className="px-6 py-4">
+                                            {order.paymentStatus === 'completed' ? (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                                    <FiCheck className="w-3 h-3" />
+                                                    Paid
+                                                </span>
+                                            ) : order.status !== 'cancelled' ? (
+                                                <RazorpayPaymentButton
+                                                    orderId={order._id}
+                                                    amount={order.totalAmount - (order.paidAmount || 0)}
+                                                    orderNumber={order.orderNumber}
+                                                    onSuccess={() => loadOrders()}
+                                                    onError={(err) => alert(err)}
+                                                    className="text-xs px-3 py-1.5"
+                                                >
+                                                    <FiCreditCard className="w-3 h-3" />
+                                                    Pay Now
+                                                </RazorpayPaymentButton>
+                                            ) : (
+                                                <span className="text-xs text-gray-400">-</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>

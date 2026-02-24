@@ -3,13 +3,14 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IFarmPlot extends Document {
     farmerId: mongoose.Types.ObjectId;
     plotName: string;
-    geometry: {
+    geometry?: {
         type: 'Polygon';
         coordinates: number[][][]; // GeoJSON Polygon coordinates
-    };
+    } | null;
     areaM2: number;
     areaAcre: number;
     areaHa: number;
+    isManualEntry?: boolean; // true if area was entered manually
     createdAt: Date;
     updatedAt: Date;
 }
@@ -31,16 +32,16 @@ const FarmPlotSchema = new Schema<IFarmPlot>(
             type: {
                 type: String,
                 enum: ['Polygon'],
-                required: true,
             },
             coordinates: {
                 type: [[[Number]]], // Array of arrays of arrays of numbers
-                required: true,
                 validate: {
-                    validator: function (coords: number[][][]) {
+                    validator: function (this: any, coords: number[][][]) {
+                        // Skip validation if geometry is not provided (manual entry)
+                        if (!coords || coords.length === 0) return true;
                         // Basic GeoJSON Polygon validation
                         // 1. Must be an array of linear rings
-                        if (!Array.isArray(coords) || coords.length === 0) return false;
+                        if (!Array.isArray(coords)) return false;
                         // 2. First ring (exterior) must have at least 4 points (3 points + closure)
                         const exteriorRing = coords[0];
                         if (!Array.isArray(exteriorRing) || exteriorRing.length < 4) return false;
@@ -56,9 +57,13 @@ const FarmPlotSchema = new Schema<IFarmPlot>(
                 },
             },
         },
+        isManualEntry: {
+            type: Boolean,
+            default: false,
+        },
         areaM2: {
             type: Number,
-            required: true,
+            default: 0,
         },
         areaAcre: {
             type: Number,
@@ -66,7 +71,7 @@ const FarmPlotSchema = new Schema<IFarmPlot>(
         },
         areaHa: {
             type: Number,
-            required: true,
+            default: 0,
         },
     },
     {

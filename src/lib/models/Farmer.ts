@@ -8,6 +8,15 @@ export interface IFarmer extends Document {
     kycVerified: boolean;
     language: 'hi' | 'en';
     upiId?: string;
+    // Bank account details for payouts
+    bankDetails?: {
+        accountNumber: string;
+        ifsc: string;
+        accountHolderName: string;
+        bankName?: string;
+    };
+    // RazorpayX contact ID for payouts
+    razorpayContactId?: string;
     profilePhoto?: string;
     // Location fields
     pincode?: string;
@@ -59,6 +68,18 @@ const FarmerSchema = new Schema<IFarmer>(
         },
         upiId: {
             type: String,
+        },
+        // Bank account details for payouts
+        bankDetails: {
+            accountNumber: { type: String },
+            ifsc: { type: String },
+            accountHolderName: { type: String },
+            bankName: { type: String },
+        },
+        // RazorpayX contact ID
+        razorpayContactId: {
+            type: String,
+            sparse: true,
         },
         profilePhoto: {
             type: String,

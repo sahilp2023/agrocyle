@@ -33,27 +33,52 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { plotName, geometry } = body;
+        const { plotName, geometry, manualAreaAcre } = body;
 
-        if (!plotName || !geometry) {
-            return errorResponse('Plot name and geometry are required', 400);
+        if (!plotName) {
+            return errorResponse('Plot name is required', 400);
         }
 
-        // Server-side area calculation
-        const areaM2 = area(geometry);
-        const areaAcre = areaM2 / 4046.8564224;
-        const areaHa = areaM2 / 10000;
+        // Either geometry or manualAreaAcre must be provided
+        if (!geometry && (!manualAreaAcre || manualAreaAcre <= 0)) {
+            return errorResponse('Either draw boundary on map or enter area manually', 400);
+        }
+
+        let areaM2: number;
+        let areaAcre: number;
+        let areaHa: number;
+        let isManualEntry = false;
+
+        if (geometry) {
+            // Server-side area calculation from map drawing
+            areaM2 = area(geometry);
+            areaAcre = areaM2 / 4046.8564224;
+            areaHa = areaM2 / 10000;
+        } else {
+            // Manual entry - calculate other units from acres
+            areaAcre = parseFloat(manualAreaAcre);
+            areaM2 = areaAcre * 4046.8564224;
+            areaHa = areaAcre * 0.404686;
+            isManualEntry = true;
+        }
 
         await dbConnect();
 
-        const plot = await FarmPlot.create({
+        const plotData: any = {
             farmerId,
             plotName,
-            geometry,
             areaM2,
             areaAcre,
             areaHa,
-        });
+            isManualEntry,
+        };
+
+        // Only include geometry if it exists (for map-drawn plots)
+        if (geometry) {
+            plotData.geometry = geometry;
+        }
+
+        const plot = await FarmPlot.create(plotData);
 
         return successResponse(plot, 'Farm plot saved successfully');
     } catch (error) {

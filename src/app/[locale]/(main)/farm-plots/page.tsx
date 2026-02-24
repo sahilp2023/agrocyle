@@ -29,6 +29,10 @@ export default function FarmPlotsPage() {
     const [editId, setEditId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
 
+    // Toggle between map drawing and manual entry
+    const [inputMode, setInputMode] = useState<'map' | 'manual'>('map');
+    const [manualAcre, setManualAcre] = useState<string>('');
+
     useEffect(() => {
         loadPlots();
     }, []);
@@ -53,8 +57,18 @@ export default function FarmPlotsPage() {
     };
 
     const handleSave = async () => {
-        if (!plotName || !currentGeoJSON) {
-            alert(locale === 'hi' ? 'कृपया नाम और सीमा भरें' : 'Please provide name and boundary');
+        if (!plotName) {
+            alert(locale === 'hi' ? 'कृपया नाम भरें' : 'Please provide plot name');
+            return;
+        }
+
+        // Validate based on input mode
+        if (inputMode === 'map' && !currentGeoJSON) {
+            alert(locale === 'hi' ? 'कृपया सीमा बनाएं' : 'Please draw the boundary on map');
+            return;
+        }
+        if (inputMode === 'manual' && (!manualAcre || parseFloat(manualAcre) <= 0)) {
+            alert(locale === 'hi' ? 'कृपया एकड़ भरें' : 'Please enter valid area in acres');
             return;
         }
 
@@ -64,16 +78,20 @@ export default function FarmPlotsPage() {
             const url = editId ? `/api/farm-plots/${editId}` : '/api/farm-plots';
             const method = editId ? 'PUT' : 'POST';
 
+            const payload: any = { plotName };
+            if (inputMode === 'map') {
+                payload.geometry = currentGeoJSON.type === 'Feature' ? currentGeoJSON.geometry : currentGeoJSON;
+            } else {
+                payload.manualAreaAcre = parseFloat(manualAcre);
+            }
+
             const res = await fetch(url, {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    plotName,
-                    geometry: currentGeoJSON.type === 'Feature' ? currentGeoJSON.geometry : currentGeoJSON
-                })
+                body: JSON.stringify(payload)
             });
 
             const data = await res.json();
@@ -118,6 +136,8 @@ export default function FarmPlotsPage() {
         setCurrentGeoJSON(null);
         setCurrentArea(0);
         setEditId(null);
+        setInputMode('map');
+        setManualAcre('');
     };
 
     const handlePlotChanged = (geoJSON: any, areaM2: number) => {
@@ -183,15 +203,72 @@ export default function FarmPlotsPage() {
                                 />
                             </div>
 
+                            {/* Toggle between map and manual entry */}
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    {locale === 'hi' ? 'सीमा बनाएं' : 'Draw Boundary'}
+                                    {locale === 'hi' ? 'क्षेत्रफल दर्ज करने का तरीका' : 'How to enter area'}
                                 </label>
-                                <FarmMap
-                                    initialGeoJSON={currentGeoJSON}
-                                    onPlotChanged={handlePlotChanged}
-                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputMode('map')}
+                                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${inputMode === 'map'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {locale === 'hi' ? '🗺️ मैप पर बनाएं' : '🗺️ Draw on Map'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setInputMode('manual')}
+                                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${inputMode === 'manual'
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        {locale === 'hi' ? '✏️ एकड़ लिखें' : '✏️ Enter Manually'}
+                                    </button>
+                                </div>
                             </div>
+
+                            {inputMode === 'map' ? (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {locale === 'hi' ? 'सीमा बनाएं' : 'Draw Boundary'}
+                                    </label>
+                                    <FarmMap
+                                        initialGeoJSON={currentGeoJSON}
+                                        onPlotChanged={handlePlotChanged}
+                                    />
+                                    {currentArea > 0 && (
+                                        <p className="text-sm text-green-600 mt-2">
+                                            {locale === 'hi' ? 'क्षेत्रफल: ' : 'Area: '}
+                                            {(currentArea / 4046.8564224).toFixed(2)} {locale === 'hi' ? 'एकड़' : 'acres'}
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        {locale === 'hi' ? 'क्षेत्रफल (एकड़ में)' : 'Area (in acres)'}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={manualAcre}
+                                        onChange={(e) => setManualAcre(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                                        placeholder={locale === 'hi' ? 'जैसे: 2.5' : 'e.g. 2.5'}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {locale === 'hi'
+                                            ? 'अपने खेत का क्षेत्रफल एकड़ में लिखें'
+                                            : 'Enter your plot area in acres'}
+                                    </p>
+                                </div>
+                            )}
 
                             <Button
                                 onClick={handleSave}

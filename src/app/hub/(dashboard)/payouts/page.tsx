@@ -9,6 +9,13 @@ interface Farmer {
     phone: string;
     village?: string;
     city?: string;
+    upiId?: string;
+    bankDetails?: {
+        accountNumber: string;
+        ifsc: string;
+        accountHolderName: string;
+        bankName?: string;
+    };
 }
 
 interface Booking {
@@ -68,6 +75,7 @@ export default function PayoutsPage() {
     const [processing, setProcessing] = useState(false);
     const [processError, setProcessError] = useState('');
     const [processSuccess, setProcessSuccess] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'upi' | 'bank' | 'manual'>('manual');
 
     useEffect(() => {
         loadFarmers();
@@ -169,13 +177,23 @@ export default function PayoutsPage() {
     const handleProcessPayout = async () => {
         if (!selectedFarmer || selectedBookingIds.length === 0) return;
 
+        // Validate payment method
+        if (paymentMethod === 'upi' && !selectedFarmer.upiId) {
+            setProcessError('Farmer has no UPI ID registered. Please use Bank or Manual.');
+            return;
+        }
+        if (paymentMethod === 'bank' && !selectedFarmer.bankDetails?.accountNumber) {
+            setProcessError('Farmer has no bank account registered. Please use UPI or Manual.');
+            return;
+        }
+
         setProcessing(true);
         setProcessError('');
 
         try {
             const token = localStorage.getItem('hubToken');
 
-            const res = await fetch('/api/hub/payouts', {
+            const res = await fetch('/api/hub/payouts/process', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -190,6 +208,7 @@ export default function PayoutsPage() {
                     balingCost,
                     logisticsDeduction,
                     netPayable,
+                    paymentMethod,
                 }),
             });
 
@@ -461,6 +480,62 @@ export default function PayoutsPage() {
                                         Payout processed successfully!
                                     </div>
                                 )}
+
+                                {/* Payment Method Selection */}
+                                <div className="border-t border-gray-100 pt-4 mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        Payment Method
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod('upi')}
+                                            className={`p-3 rounded-lg border-2 text-center transition-all ${paymentMethod === 'upi'
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                } ${!selectedFarmer?.upiId ? 'opacity-50' : ''}`}
+                                        >
+                                            <span className="text-lg">📱</span>
+                                            <p className="text-sm font-medium mt-1">UPI</p>
+                                            {selectedFarmer?.upiId && (
+                                                <p className="text-xs text-gray-500 truncate">{selectedFarmer.upiId}</p>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod('bank')}
+                                            className={`p-3 rounded-lg border-2 text-center transition-all ${paymentMethod === 'bank'
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                } ${!selectedFarmer?.bankDetails?.accountNumber ? 'opacity-50' : ''}`}
+                                        >
+                                            <span className="text-lg">🏦</span>
+                                            <p className="text-sm font-medium mt-1">Bank</p>
+                                            {selectedFarmer?.bankDetails?.accountNumber && (
+                                                <p className="text-xs text-gray-500">
+                                                    ****{selectedFarmer.bankDetails.accountNumber.slice(-4)}
+                                                </p>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPaymentMethod('manual')}
+                                            className={`p-3 rounded-lg border-2 text-center transition-all ${paymentMethod === 'manual'
+                                                    ? 'border-blue-500 bg-blue-50'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <span className="text-lg">📝</span>
+                                            <p className="text-sm font-medium mt-1">Manual</p>
+                                            <p className="text-xs text-gray-500">Pay offline</p>
+                                        </button>
+                                    </div>
+                                    {paymentMethod === 'manual' && (
+                                        <p className="text-xs text-amber-600 mt-2">
+                                            ⚠️ Manual payouts require you to transfer funds outside the system
+                                        </p>
+                                    )}
+                                </div>
 
                                 {/* Action Button */}
                                 <button

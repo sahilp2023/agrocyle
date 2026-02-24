@@ -12,10 +12,14 @@ export interface IPayment extends Document {
     farmerId: mongoose.Types.ObjectId;
     amount: number;
     status: PaymentStatus;
-    paymentMethod: 'upi' | 'bank_transfer' | 'cash';
+    paymentMethod: 'upi' | 'bank_transfer' | 'cash' | 'razorpay';
     transactionId?: string;
     upiRef?: string;
     bankRefNumber?: string;
+    // Razorpay fields
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
     paidAt?: Date;
     failureReason?: string;
     receipt?: string; // URL or ID for receipt
@@ -50,8 +54,8 @@ const PaymentSchema = new Schema<IPayment>(
         },
         paymentMethod: {
             type: String,
-            enum: ['upi', 'bank_transfer', 'cash'],
-            default: 'upi',
+            enum: ['upi', 'bank_transfer', 'cash', 'razorpay'],
+            default: 'razorpay',
         },
         transactionId: {
             type: String,
@@ -61,6 +65,18 @@ const PaymentSchema = new Schema<IPayment>(
             type: String,
         },
         bankRefNumber: {
+            type: String,
+        },
+        // Razorpay fields
+        razorpayOrderId: {
+            type: String,
+            sparse: true,
+        },
+        razorpayPaymentId: {
+            type: String,
+            sparse: true,
+        },
+        razorpaySignature: {
             type: String,
         },
         paidAt: {

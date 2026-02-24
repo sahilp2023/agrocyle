@@ -19,6 +19,9 @@ export interface IBuyerOrder extends Document {
     paidAmount: number;
     invoiceNumber?: string;
     notes?: string;
+    // Razorpay fields
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -82,6 +85,15 @@ const BuyerOrderSchema = new Schema<IBuyerOrder>(
         },
         notes: {
             type: String,
+        },
+        // Razorpay fields
+        razorpayOrderId: {
+            type: String,
+            sparse: true,
+        },
+        razorpayPaymentId: {
+            type: String,
+            sparse: true,
         },
     },
     {

@@ -14,6 +14,7 @@ export interface IBaler extends Document {
     ownerType: OwnerType;
     ownerName?: string;
     hubId: mongoose.Types.ObjectId;
+    operatorId?: mongoose.Types.ObjectId;
     status: VehicleStatus;
     // Baler specific
     timePerTonne?: number; // minutes per tonne for estimation
@@ -68,6 +69,11 @@ const BalerSchema = new Schema<IBaler>(
             type: Schema.Types.ObjectId,
             ref: 'Hub',
             required: true,
+            index: true,
+        },
+        operatorId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Operator',
             index: true,
         },
         status: {

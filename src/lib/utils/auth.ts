@@ -5,8 +5,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'agrocycle-secret-key-change-in-pro
 const JWT_EXPIRES_IN = '7d';
 
 export interface TokenPayload {
-    farmerId: string;
-    phone: string;
+    farmerId?: string;
+    buyerId?: string;
+    hubId?: string;
+    operatorId?: string;
+    phone?: string;
+    email?: string;
 }
 
 /**
@@ -47,6 +51,28 @@ export function getFarmerIdFromRequest(request: NextRequest): string | null {
 
     const payload = verifyToken(token);
     return payload?.farmerId || null;
+}
+
+/**
+ * Get buyer ID from request (for protected routes)
+ */
+export function getBuyerIdFromRequest(request: NextRequest): string | null {
+    const token = getTokenFromHeader(request);
+    if (!token) return null;
+
+    const payload = verifyToken(token);
+    return payload?.buyerId || null;
+}
+
+/**
+ * Get hub ID from request (for protected routes)
+ */
+export function getHubIdFromRequest(request: NextRequest): string | null {
+    const token = getTokenFromHeader(request);
+    if (!token) return null;
+
+    const payload = verifyToken(token);
+    return payload?.hubId || null;
 }
 
 /**

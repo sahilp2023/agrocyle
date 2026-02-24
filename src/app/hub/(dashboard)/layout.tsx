@@ -28,6 +28,7 @@ const navItems = [
     { href: '/hub/payouts', label: 'Farmer Payouts', icon: FiDollarSign },
     { href: '/hub/inventory', label: 'Inventory', icon: FiPackage },
     { href: '/hub/farmers', label: 'Linked Farmers', icon: FiUsers },
+    { href: '/hub/operators', label: 'Operators', icon: FiTruck },
     { href: '/hub/support', label: 'Help & Support', icon: FiMessageCircle },
 ];
 

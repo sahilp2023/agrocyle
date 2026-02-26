@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
                 companyCode: buyer.companyCode,
                 email: buyer.email,
             }
-        }, 'Registration successful. Please accept the agreement to continue.', 201);
+        }, 'Registration successful. Please accept the agreement to continue.');
     } catch (error) {
         console.error('Buyer registration error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

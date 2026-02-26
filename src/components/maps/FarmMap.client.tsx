@@ -131,7 +131,20 @@ const FarmMap = ({ initialGeoJSON, onPlotChanged, readonly = false }: FarmMapPro
         const [query, setQuery] = useState('');
         const [searching, setSearching] = useState(false);
         const [searchError, setSearchError] = useState('');
+        const [isExpanded, setIsExpanded] = useState(false);
         const markerRef = useRef<L.Marker | null>(null);
+        const containerRef = useRef<HTMLDivElement>(null);
+
+        // Close on click outside
+        useEffect(() => {
+            const handleClickOutside = (e: MouseEvent) => {
+                if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                    setIsExpanded(false);
+                }
+            };
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, []);
 
         const handleSearch = async () => {
             if (!query.trim()) return;
@@ -180,6 +193,8 @@ const FarmMap = ({ initialGeoJSON, onPlotChanged, readonly = false }: FarmMapPro
                         .openPopup();
                     markerRef.current = marker;
 
+                    setIsExpanded(false); // Collapse after successful search
+
                     // Auto-remove marker after 10s
                     setTimeout(() => {
                         if (markerRef.current === marker) {
@@ -198,10 +213,41 @@ const FarmMap = ({ initialGeoJSON, onPlotChanged, readonly = false }: FarmMapPro
         };
 
         return (
-            <div style={{
-                position: 'absolute', top: 10, left: 50, right: 50, zIndex: 1000,
-                display: 'flex', gap: '4px',
-            }}>
+            <div
+                ref={containerRef}
+                style={{
+                    position: 'absolute', top: 10, left: 50, zIndex: 1000,
+                    display: 'flex', gap: '4px',
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    border: searchError ? '2px solid #ef4444' : '2px solid rgba(0,0,0,0.2)',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease',
+                    width: isExpanded ? 'calc(100vw - 120px)' : '34px',
+                    maxWidth: isExpanded ? '300px' : '34px',
+                }}
+            >
+                <button
+                    onClick={() => {
+                        if (!isExpanded) {
+                            setIsExpanded(true);
+                            setSearchError('');
+                        } else {
+                            handleSearch();
+                        }
+                    }}
+                    style={{
+                        width: '34px', height: '34px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'white', border: 'none', cursor: 'pointer',
+                        fontSize: '16px', flexShrink: 0,
+                    }}
+                    title="Search location"
+                >
+                    {searching ? '⏳' : '🔍'}
+                </button>
+
                 <input
                     type="text"
                     value={query}
@@ -209,27 +255,14 @@ const FarmMap = ({ initialGeoJSON, onPlotChanged, readonly = false }: FarmMapPro
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                     placeholder="Search village, city or pincode..."
                     style={{
-                        flex: 1, padding: '8px 12px', fontSize: '13px',
-                        border: searchError ? '2px solid #ef4444' : '2px solid #16a34a',
-                        borderRadius: '8px', outline: 'none',
-                        background: 'white',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        flex: 1, padding: '0 8px', fontSize: '13px',
+                        border: 'none', outline: 'none',
+                        background: 'transparent',
+                        opacity: isExpanded ? 1 : 0,
+                        width: isExpanded ? 'auto' : 0,
+                        pointerEvents: isExpanded ? 'auto' : 'none',
                     }}
                 />
-                <button
-                    onClick={handleSearch}
-                    disabled={searching || !query.trim()}
-                    style={{
-                        padding: '8px 14px', fontSize: '13px', fontWeight: 600,
-                        background: searching ? '#9ca3af' : '#16a34a',
-                        color: 'white', border: 'none', borderRadius: '8px',
-                        cursor: searching ? 'wait' : 'pointer',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    {searching ? '...' : '🔍'}
-                </button>
             </div>
         );
     };

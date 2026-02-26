@@ -96,6 +96,8 @@ export async function POST(request: NextRequest) {
         // Find hub for this farmer based on pincode
         const farmer = await Farmer.findById(farmerId);
         let hubId = undefined;
+
+        // Try to match by pincode first
         if (farmer?.pincode) {
             const hub = await Hub.findOne({
                 servicePincodes: farmer.pincode,
@@ -103,6 +105,16 @@ export async function POST(request: NextRequest) {
             });
             if (hub) {
                 hubId = hub._id;
+            }
+        }
+
+        // Fallback: Assign to the first active hub if no exact pincode match is found
+        if (!hubId) {
+            const fallbackHub = await Hub.findOne({ isActive: true });
+            if (fallbackHub) {
+                hubId = fallbackHub._id;
+            } else {
+                return errorResponse('No active hubs found to service this request.', 400);
             }
         }
 

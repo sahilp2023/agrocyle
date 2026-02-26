@@ -44,18 +44,8 @@ export async function GET(request: NextRequest) {
         });
 
         // Combine data
-        const farmersWithStats = farmers.map((farmer: {
-            _id: mongoose.Types.ObjectId;
-            name: string;
-            phone: string;
-            village?: string;
-            city?: string;
-            state?: string;
-            pincode?: string;
-            isVerified: boolean;
-            isKYCDone: boolean;
-            createdAt: Date;
-        }) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const farmersWithStats = farmers.map((farmer: any) => ({
             ...farmer,
             totalPickups: pickupByFarmer[farmer._id.toString()] || 0,
             totalEarnings: earningsByFarmer[farmer._id.toString()] || 0,

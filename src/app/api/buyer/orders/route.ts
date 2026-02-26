@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
         await order.save();
 
-        return successResponse({ order }, 'Order created successfully', 201);
+        return successResponse({ order }, 'Order created successfully');
     } catch (error) {
         console.error('Create order error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';

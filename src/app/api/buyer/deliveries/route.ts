@@ -1,18 +1,17 @@
 import { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/db/mongodb';
-import BuyerDelivery from '@/lib/models/BuyerDelivery';
 import BuyerOrder from '@/lib/models/BuyerOrder';
 import Hub from '@/lib/models/Hub';
 import { successResponse, errorResponse } from '@/lib/utils';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'agrocycle-secret-key-change-in-production';
 
+void Hub;
+
 function verifyBuyerToken(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        return null;
-    }
+    if (!authHeader?.startsWith('Bearer ')) return null;
     try {
         const token = authHeader.substring(7);
         return jwt.verify(token, JWT_SECRET) as { id: string; role: string };
@@ -21,7 +20,7 @@ function verifyBuyerToken(request: NextRequest) {
     }
 }
 
-// GET /api/buyer/deliveries - List buyer's deliveries
+// GET /api/buyer/deliveries — buyer's dispatched/delivered orders with quality + shipment
 export async function GET(request: NextRequest) {
     try {
         const decoded = verifyBuyerToken(request);
@@ -30,46 +29,26 @@ export async function GET(request: NextRequest) {
         }
 
         await dbConnect();
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        Hub;
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        BuyerOrder;
 
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
-        const orderId = searchParams.get('orderId');
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '20');
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const query: any = { buyerId: decoded.id };
-        if (status) {
-            query.status = status;
-        }
-        if (orderId) {
-            query.orderId = orderId;
-        }
+        const query: any = {
+            buyerId: decoded.id,
+            status: { $in: ['dispatched', 'delivered'] },
+        };
+        if (status && status !== 'all') query.status = status;
 
-        const deliveries = await BuyerDelivery.find(query)
+        const deliveries = await BuyerOrder.find(query)
             .populate('hubId', 'name city code')
-            .populate('orderId', 'orderNumber quantityTonnes')
-            .sort({ deliveryDate: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit);
+            .select('orderNumber quantityTonnes totalAmount status dispatchedDate deliveredDate qualityReport shipmentDetails hubId')
+            .sort({ dispatchedDate: -1 })
+            .lean();
 
-        const total = await BuyerDelivery.countDocuments(query);
-
-        return successResponse({
-            deliveries,
-            pagination: {
-                page,
-                limit,
-                total,
-                pages: Math.ceil(total / limit)
-            }
-        });
+        return successResponse(deliveries);
     } catch (error) {
-        console.error('Get deliveries error:', error);
+        console.error('Buyer deliveries error:', error);
         return errorResponse('Failed to fetch deliveries', 500);
     }
 }

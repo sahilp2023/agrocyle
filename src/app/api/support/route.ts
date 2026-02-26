@@ -95,13 +95,19 @@ export async function GET(request: NextRequest) {
 // POST /api/support - Create new ticket
 export async function POST(request: NextRequest) {
     try {
+        console.log('[Support POST] Starting ticket creation...');
+
         const user = await getUserFromRequest(request);
+        console.log('[Support POST] User:', user ? `${user.type} (${user.id})` : 'null');
+
         if (!user) {
+            console.log('[Support POST] Auth failed — no user resolved from token');
             return errorResponse('Unauthorized', 401);
         }
 
         const body = await request.json();
         const { category, subject, description, priority } = body;
+        console.log('[Support POST] Body:', { category, subject: subject?.slice(0, 30), priority });
 
         if (!category || !subject || !description) {
             return errorResponse('Category, subject, and description are required', 400);
@@ -113,9 +119,16 @@ export async function POST(request: NextRequest) {
         const year = new Date().getFullYear();
         const count = await SupportTicket.countDocuments();
         const ticketNumber = `TKT-${year}-${String(count + 1).padStart(4, '0')}`;
+        console.log('[Support POST] Generated ticket number:', ticketNumber);
 
         // Create ObjectId properly
-        const createdById = new mongoose.Types.ObjectId(user.id);
+        let createdById: mongoose.Types.ObjectId;
+        try {
+            createdById = new mongoose.Types.ObjectId(user.id);
+        } catch (e) {
+            console.error('[Support POST] Invalid user ID for ObjectId:', user.id, e);
+            return errorResponse('Invalid user ID', 400);
+        }
 
         const ticketData = {
             ticketNumber,
@@ -131,11 +144,14 @@ export async function POST(request: NextRequest) {
             messages: [],
         };
 
+        console.log('[Support POST] Creating ticket with data:', JSON.stringify(ticketData, null, 2));
+
         const ticket = await SupportTicket.create(ticketData);
+        console.log('[Support POST] Ticket created:', ticket._id);
 
         return successResponse(ticket, 'Ticket created successfully');
     } catch (error) {
-        console.error('Create support ticket error:', error);
+        console.error('[Support POST] Error:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return errorResponse(`Failed to create ticket: ${errorMessage}`, 500);
     }

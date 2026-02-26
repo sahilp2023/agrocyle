@@ -112,6 +112,7 @@ export default function AdminBuyerOrdersPage() {
         switch (status) {
             case 'pending': return 'bg-amber-500/20 text-amber-400';
             case 'confirmed': return 'bg-blue-500/20 text-blue-400';
+            case 'processing': return 'bg-cyan-500/20 text-cyan-400';
             case 'dispatched': return 'bg-purple-500/20 text-purple-400';
             case 'delivered': return 'bg-green-500/20 text-green-400';
             case 'cancelled': return 'bg-red-500/20 text-red-400';
@@ -188,6 +189,7 @@ export default function AdminBuyerOrdersPage() {
                         <option value="all">All Status</option>
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
+                        <option value="processing">Processing</option>
                         <option value="dispatched">Dispatched</option>
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
@@ -276,25 +278,11 @@ export default function AdminBuyerOrdersPage() {
                                                         </button>
                                                     </>
                                                 )}
-                                                {order.status === 'confirmed' && (
-                                                    <button
-                                                        onClick={() => updateOrderStatus(order._id, 'dispatched')}
-                                                        disabled={updating === order._id}
-                                                        className="p-2 bg-purple-500/20 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors"
-                                                        title="Mark Dispatched"
-                                                    >
-                                                        <FiTruck className="w-4 h-4" />
-                                                    </button>
+                                                {(order.status === 'confirmed' || order.status === 'processing') && (
+                                                    <span className="text-xs text-cyan-400 italic">→ Forwarded to Hub</span>
                                                 )}
                                                 {order.status === 'dispatched' && (
-                                                    <button
-                                                        onClick={() => updateOrderStatus(order._id, 'delivered')}
-                                                        disabled={updating === order._id}
-                                                        className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
-                                                        title="Mark Delivered"
-                                                    >
-                                                        <FiCheck className="w-4 h-4" />
-                                                    </button>
+                                                    <span className="text-xs text-purple-400 italic">🚚 In Transit</span>
                                                 )}
                                                 <button
                                                     className="p-2 bg-white/10 text-gray-400 rounded-lg hover:bg-white/20 transition-colors"

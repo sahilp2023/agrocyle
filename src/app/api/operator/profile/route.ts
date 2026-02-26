@@ -69,13 +69,16 @@ export async function PATCH(request: NextRequest) {
                 type: 'Point',
                 coordinates: [body.currentLocation.lng, body.currentLocation.lat],
             };
+            console.log('[Operator Profile] Saving location:', body.currentLocation.lat, body.currentLocation.lng);
         }
 
+        console.log('[Operator Profile] Update fields:', Object.keys(updateData));
         const operator = await Operator.findByIdAndUpdate(
             operatorAuth.id,
             updateData,
             { new: true }
         ).select('-otp -otpExpiry');
+        console.log('[Operator Profile] Location after save:', operator?.currentLocation);
 
         if (!operator) {
             return errorResponse('Operator not found', 404);

@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
     FiArrowLeft, FiUser, FiPhone, FiTruck, FiMapPin,
     FiActivity, FiClock, FiCheckCircle, FiStar
 } from 'react-icons/fi';
+
+const LocationMap = dynamic(() => import('@/components/LocationMap'), { ssr: false });
 
 interface OperatorRecord {
     _id: string;
@@ -123,7 +126,7 @@ export default function FleetRecordPage() {
 
     const lat = operator.currentLocation?.coordinates?.[1];
     const lng = operator.currentLocation?.coordinates?.[0];
-    const hasLocation = lat && lng;
+    const hasLocation = lat !== undefined && lng !== undefined && !(lat === 0 && lng === 0);
     const typeLabel = operator.operatorType === 'both' ? 'Baler & Truck'
         : operator.operatorType === 'truck' ? 'Truck Operator' : 'Baler Operator';
     const typeEmoji = operator.operatorType === 'truck' ? '🚛' : '🚜';
@@ -208,14 +211,7 @@ export default function FleetRecordPage() {
                     </div>
                     <div className="h-72">
                         {hasLocation ? (
-                            <iframe
-                                width="100%"
-                                height="100%"
-                                style={{ border: 0 }}
-                                loading="lazy"
-                                referrerPolicy="no-referrer-when-downgrade"
-                                src={`https://www.google.com/maps?q=${lat},${lng}&z=14&output=embed`}
-                            />
+                            <LocationMap lat={lat!} lng={lng!} label={operator.name} height="288px" />
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-gray-400">
                                 <FiMapPin className="w-12 h-12 mb-3 opacity-30" />
@@ -412,9 +408,9 @@ export default function FleetRecordPage() {
                                         </td>
                                         <td className="px-5 py-3">
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${a.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                    a.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                                                        a.status === 'assigned' ? 'bg-amber-100 text-amber-700' :
-                                                            'bg-gray-100 text-gray-600'
+                                                a.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                                                    a.status === 'assigned' ? 'bg-amber-100 text-amber-700' :
+                                                        'bg-gray-100 text-gray-600'
                                                 }`}>
                                                 {a.status === 'completed' ? 'Completed' :
                                                     a.status === 'in_progress' ? 'In Progress' :

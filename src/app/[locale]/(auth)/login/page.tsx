@@ -51,6 +51,8 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [countdown, setCountdown] = useState(0);
+    const [devOtp, setDevOtp] = useState('');
+    const [showOtp, setShowOtp] = useState(false);
 
     const startCountdown = () => {
         setCountdown(30);
@@ -88,7 +90,7 @@ export default function LoginPage() {
 
             if (data.success) {
                 if (data.data?.otp) {
-                    console.log('Use this OTP to login:', data.data.otp);
+                    setDevOtp(data.data.otp);
                 }
                 setStep('otp');
                 startCountdown();
@@ -257,16 +259,25 @@ export default function LoginPage() {
                                     </button>
                                 )}
                             </div>
+
+                            {/* Show OTP button */}
+                            {devOtp && (
+                                <div className="mt-3 text-center">
+                                    <button
+                                        onClick={() => { setShowOtp(!showOtp); if (!showOtp) setTimeout(() => setShowOtp(false), 5000); }}
+                                        className="text-xs text-gray-400 hover:text-green-600 transition-colors underline">
+                                        {showOtp ? '🔓 Hide OTP' : '🔑 Show OTP'}
+                                    </button>
+                                    {showOtp && (
+                                        <p className="mt-1 text-lg font-mono font-bold text-green-600 bg-green-50 rounded-lg py-1.5 tracking-[0.4em]">
+                                            {devOtp}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
-
-                {/* Demo OTP hint for development */}
-                <p className="text-green-100/70 text-xs mt-8 text-center">
-                    {locale === 'hi'
-                        ? 'डेमो: OTP कंसोल में देखें (F12)'
-                        : 'Demo: Check console for OTP (F12)'}
-                </p>
             </div>
         </div>
     );

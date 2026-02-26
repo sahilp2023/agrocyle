@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
                 ]
             })
             .populate('operatorId', 'name phone vehicleNumber operatorType isOnline')
+            .populate('truckOperatorId', 'name phone vehicleNumber operatorType isOnline')
             .sort({ assignedAt: -1 });
 
         return successResponse(assignments);
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
             hubId: manager.hubId,
             balerId: balerOperator._id,
             operatorId: balerOperator._id,
+            truckOperatorId: truckOperatorId || undefined,
             status: 'assigned',
             operatorStatus: 'pending',
             assignedAt: new Date(),

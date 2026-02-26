@@ -19,6 +19,8 @@ export default function OperatorRegisterPage() {
     const [step, setStep] = useState<Step>('phone');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [devOtp, setDevOtp] = useState('');
+    const [showOtp, setShowOtp] = useState(false);
 
     // Form data
     const [phone, setPhone] = useState('');
@@ -82,7 +84,7 @@ export default function OperatorRegisterPage() {
             const data = await res.json();
 
             if (data.success) {
-                console.log('📱 OTP:', data.data?.otp); // DEV: show in browser console
+                if (data.data?.otp) setDevOtp(data.data.otp);
                 setStep('otp');
             } else if (data.error?.includes('already registered')) {
                 setError('Phone already registered. Please login instead.');
@@ -283,6 +285,22 @@ export default function OperatorRegisterPage() {
                                 className="w-full text-gray-500 text-sm hover:text-gray-700">
                                 ← Change phone number
                             </button>
+
+                            {/* Show OTP button */}
+                            {devOtp && (
+                                <div className="mt-3 text-center">
+                                    <button
+                                        onClick={() => { setShowOtp(!showOtp); if (!showOtp) setTimeout(() => setShowOtp(false), 5000); }}
+                                        className="text-xs text-gray-400 hover:text-orange-600 transition-colors underline">
+                                        {showOtp ? '🔓 Hide OTP' : '🔑 Show OTP'}
+                                    </button>
+                                    {showOtp && (
+                                        <p className="mt-1 text-lg font-mono font-bold text-orange-600 bg-orange-50 rounded-lg py-1.5 tracking-[0.4em]">
+                                            {devOtp}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 

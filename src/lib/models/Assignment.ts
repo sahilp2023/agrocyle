@@ -20,6 +20,7 @@ export interface IAssignment extends Document {
     truckId?: mongoose.Types.ObjectId;
     hubId: mongoose.Types.ObjectId;
     operatorId?: mongoose.Types.ObjectId;
+    truckOperatorId?: mongoose.Types.ObjectId;
     status: AssignmentStatus;
     operatorStatus: OperatorJobStatus;
     rejectionReason?: string;
@@ -81,6 +82,11 @@ const AssignmentSchema = new Schema<IAssignment>(
             index: true,
         },
         operatorId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Operator',
+            index: true,
+        },
+        truckOperatorId: {
             type: Schema.Types.ObjectId,
             ref: 'Operator',
             index: true,
@@ -173,9 +179,13 @@ const AssignmentSchema = new Schema<IAssignment>(
 AssignmentSchema.index({ hubId: 1, status: 1 });
 AssignmentSchema.index({ bookingId: 1 }, { unique: true });
 AssignmentSchema.index({ operatorId: 1, operatorStatus: 1 });
+AssignmentSchema.index({ truckOperatorId: 1, operatorStatus: 1 });
 AssignmentSchema.index({ operatorId: 1, completedAt: -1 });
 
-const Assignment: Model<IAssignment> =
-    mongoose.models.Assignment || mongoose.model<IAssignment>('Assignment', AssignmentSchema);
+// Force-delete cached model to ensure updated schema is always used
+if (mongoose.models.Assignment) {
+    mongoose.deleteModel('Assignment');
+}
+const Assignment: Model<IAssignment> = mongoose.model<IAssignment>('Assignment', AssignmentSchema);
 
 export default Assignment;

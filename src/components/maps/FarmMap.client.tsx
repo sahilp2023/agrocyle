@@ -125,6 +125,115 @@ const FarmMap = ({ initialGeoJSON, onPlotChanged, readonly = false }: FarmMapPro
         return null;
     };
 
+    // Search/pincode control — renders inside MapContainer to access useMap()
+    const SearchControl = () => {
+        const map = useMap();
+        const [query, setQuery] = useState('');
+        const [searching, setSearching] = useState(false);
+        const [searchError, setSearchError] = useState('');
+        const markerRef = useRef<L.Marker | null>(null);
+
+        const handleSearch = async () => {
+            if (!query.trim()) return;
+            setSearching(true);
+            setSearchError('');
+            try {
+                // Use Nominatim free geocoding, scoped to India
+                const encoded = encodeURIComponent(query.trim());
+                const url = `https://nominatim.openstreetmap.org/search?q=${encoded}&countrycodes=in&format=json&limit=1&addressdetails=1`;
+                const res = await fetch(url, {
+                    headers: { 'Accept-Language': 'en' },
+                });
+                const results = await res.json();
+                if (results.length > 0) {
+                    const { lat, lon, display_name } = results[0];
+                    const latNum = parseFloat(lat);
+                    const lonNum = parseFloat(lon);
+
+                    // Fly to location
+                    map.flyTo([latNum, lonNum], 15, { duration: 1.5 });
+
+                    // Remove old search marker
+                    if (markerRef.current) {
+                        map.removeLayer(markerRef.current);
+                    }
+
+                    // Add temporary marker
+                    const searchIcon = L.divIcon({
+                        html: `<div style="
+                            width: 28px; height: 28px;
+                            background: #ef4444;
+                            border: 3px solid white;
+                            border-radius: 50%;
+                            display: flex; align-items: center; justify-content: center;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+                            font-size: 12px;
+                        ">📍</div>`,
+                        className: '',
+                        iconSize: [28, 28],
+                        iconAnchor: [14, 14],
+                    });
+
+                    const marker = L.marker([latNum, lonNum], { icon: searchIcon })
+                        .addTo(map)
+                        .bindPopup(`<div style="font-family:system-ui; font-size:12px; max-width:200px;"><strong>${display_name}</strong></div>`)
+                        .openPopup();
+                    markerRef.current = marker;
+
+                    // Auto-remove marker after 10s
+                    setTimeout(() => {
+                        if (markerRef.current === marker) {
+                            map.removeLayer(marker);
+                            markerRef.current = null;
+                        }
+                    }, 10000);
+                } else {
+                    setSearchError('Location not found');
+                }
+            } catch {
+                setSearchError('Search failed');
+            } finally {
+                setSearching(false);
+            }
+        };
+
+        return (
+            <div style={{
+                position: 'absolute', top: 10, left: 50, right: 50, zIndex: 1000,
+                display: 'flex', gap: '4px',
+            }}>
+                <input
+                    type="text"
+                    value={query}
+                    onChange={e => { setQuery(e.target.value); setSearchError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search village, city or pincode..."
+                    style={{
+                        flex: 1, padding: '8px 12px', fontSize: '13px',
+                        border: searchError ? '2px solid #ef4444' : '2px solid #16a34a',
+                        borderRadius: '8px', outline: 'none',
+                        background: 'white',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    }}
+                />
+                <button
+                    onClick={handleSearch}
+                    disabled={searching || !query.trim()}
+                    style={{
+                        padding: '8px 14px', fontSize: '13px', fontWeight: 600,
+                        background: searching ? '#9ca3af' : '#16a34a',
+                        color: 'white', border: 'none', borderRadius: '8px',
+                        cursor: searching ? 'wait' : 'pointer',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    {searching ? '...' : '🔍'}
+                </button>
+            </div>
+        );
+    };
+
     return (
         <div className="space-y-2">
             <div className="h-[400px] w-full rounded-xl overflow-hidden border border-gray-300 relative z-0">
@@ -165,6 +274,7 @@ const FarmMap = ({ initialGeoJSON, onPlotChanged, readonly = false }: FarmMapPro
                         )}
                     </FeatureGroup>
                     <LocateEffect />
+                    <SearchControl />
                 </MapContainer>
             </div>
 

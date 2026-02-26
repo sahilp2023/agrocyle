@@ -51,43 +51,83 @@ export default function OperatorDashboard() {
         sendLocation();
     }, []);
 
+    const saveLocationToServer = async (lat: number, lng: number, source: string) => {
+        try {
+            const token = localStorage.getItem('operatorToken');
+            if (!token) {
+                console.warn('[Location] No operator token found');
+                setLocationStatus('denied');
+                return;
+            }
+            const payload = {
+                isOnline: true,
+                currentLocation: { lat, lng },
+            };
+            console.log(`[Location] Sending (${source}):`, lat.toFixed(4), lng.toFixed(4));
+            const res = await fetch('/api/operator/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (data.success) {
+                console.log('[Location] ✅ Saved successfully via', source);
+                setLocationStatus('sent');
+            } else {
+                console.error('[Location] Save failed:', data.error || data);
+                setLocationStatus('denied');
+            }
+        } catch (e) {
+            console.error('[Location] Send error:', e);
+            setLocationStatus('denied');
+        }
+    };
+
     const sendLocation = async () => {
+        console.log('[Location] Starting location capture...');
         if (!navigator.geolocation) {
-            setLocationStatus('unavailable');
+            console.warn('[Location] Geolocation API not available, falling back to IP');
+            await ipFallback();
             return;
         }
         setLocationStatus('requesting');
+
+        // Step 1: Try high-accuracy GPS
         navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                try {
-                    const token = localStorage.getItem('operatorToken');
-                    if (!token) return;
-                    const res = await fetch('/api/operator/profile', {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                        body: JSON.stringify({
-                            isOnline: true,
-                            currentLocation: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-                        }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        setLocationStatus('sent');
-                    } else {
-                        console.error('Location save failed:', data);
-                        setLocationStatus('denied');
-                    }
-                } catch (e) {
-                    console.error('Location send error:', e);
-                    setLocationStatus('denied');
-                }
-            },
+            (pos) => saveLocationToServer(pos.coords.latitude, pos.coords.longitude, 'GPS (high accuracy)'),
             (err) => {
-                console.warn('Geolocation error:', err.code, err.message);
-                setLocationStatus('denied');
+                console.warn('[Location] High accuracy failed:', err.code, err.message);
+                // Step 2: Retry with low accuracy (works better on desktops)
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => saveLocationToServer(pos.coords.latitude, pos.coords.longitude, 'GPS (low accuracy)'),
+                    async (err2) => {
+                        console.warn('[Location] Low accuracy also failed:', err2.code, err2.message);
+                        // Step 3: Fall back to IP-based geolocation
+                        await ipFallback();
+                    },
+                    { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 }
+                );
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 8000 }
         );
+    };
+
+    const ipFallback = async () => {
+        try {
+            console.log('[Location] Trying IP-based geolocation...');
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.latitude && data.longitude) {
+                console.log('[Location] Got IP location:', data.latitude, data.longitude, data.city);
+                await saveLocationToServer(data.latitude, data.longitude, `IP (${data.city || 'unknown'})`);
+            } else {
+                console.error('[Location] IP geolocation returned no coords:', data);
+                setLocationStatus('denied');
+            }
+        } catch (e) {
+            console.error('[Location] IP fallback failed:', e);
+            setLocationStatus('denied');
+        }
     };
 
     const fetchData = async () => {

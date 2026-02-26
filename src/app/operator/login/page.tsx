@@ -11,6 +11,8 @@ export default function OperatorLoginPage() {
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [devOtp, setDevOtp] = useState('');
+    const [showOtp, setShowOtp] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('operatorToken');
@@ -35,6 +37,7 @@ export default function OperatorLoginPage() {
             const data = await res.json();
 
             if (data.success) {
+                if (data.data?.otp) setDevOtp(data.data.otp);
                 setStep('otp');
             } else {
                 setError(data.error || 'Failed to send OTP');
@@ -154,6 +157,22 @@ export default function OperatorLoginPage() {
                                 className="w-full text-gray-500 text-sm hover:text-gray-700 transition-colors">
                                 ← Change phone number
                             </button>
+
+                            {/* Show OTP button */}
+                            {devOtp && (
+                                <div className="mt-3 text-center">
+                                    <button
+                                        onClick={() => { setShowOtp(!showOtp); if (!showOtp) setTimeout(() => setShowOtp(false), 5000); }}
+                                        className="text-xs text-gray-400 hover:text-orange-600 transition-colors underline">
+                                        {showOtp ? '🔓 Hide OTP' : '🔑 Show OTP'}
+                                    </button>
+                                    {showOtp && (
+                                        <p className="mt-1 text-lg font-mono font-bold text-orange-600 bg-orange-50 rounded-lg py-1.5 tracking-[0.4em]">
+                                            {devOtp}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

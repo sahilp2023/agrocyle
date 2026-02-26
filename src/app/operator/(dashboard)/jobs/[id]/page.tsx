@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import {
     FiArrowLeft, FiCheck, FiX, FiUser, FiPhone, FiMapPin,
-    FiClock, FiCamera, FiSend, FiPackage
+    FiClock, FiCamera, FiSend, FiPackage, FiNavigation
 } from 'react-icons/fi';
+
+const LocationMap = dynamic(() => import('@/components/LocationMap'), { ssr: false });
 
 interface JobDetail {
     _id: string;
@@ -31,10 +34,19 @@ interface JobDetail {
             phone: string;
             village?: string;
             city?: string;
+            location?: {
+                type: string;
+                coordinates: [number, number]; // [lng, lat]
+                address?: string;
+            };
         };
         farmId?: {
             plotName: string;
             areaAcre: number;
+            geometry?: {
+                type: string;
+                coordinates: number[][][];
+            };
         };
     };
     hubId?: { name: string; city: string };
@@ -196,6 +208,23 @@ export default function OperatorJobDetailPage() {
         }
     };
 
+    // Compute map coordinates — must be before conditional returns (hooks ordering rule)
+    const mapCoords = useMemo(() => {
+        if (!job) return null;
+        const farmGeom = job.bookingId?.farmId?.geometry;
+        if (farmGeom && farmGeom.coordinates && farmGeom.coordinates[0] && farmGeom.coordinates[0].length > 0) {
+            const ring = farmGeom.coordinates[0];
+            const sumLat = ring.reduce((s: number, p: number[]) => s + (p[1] || 0), 0);
+            const sumLng = ring.reduce((s: number, p: number[]) => s + (p[0] || 0), 0);
+            return { lat: sumLat / ring.length, lng: sumLng / ring.length };
+        }
+        const loc = job.bookingId?.farmerId?.location;
+        if (loc?.coordinates && loc.coordinates[0] !== 0 && loc.coordinates[1] !== 0) {
+            return { lat: loc.coordinates[1], lng: loc.coordinates[0] };
+        }
+        return null;
+    }, [job]);
+
     if (loading) {
         return (
             <div className="p-6 flex items-center justify-center min-h-[60vh]">
@@ -237,9 +266,9 @@ export default function OperatorJobDetailPage() {
                         <h2 className="text-xl font-bold mt-0.5">AS-{job._id.slice(-4).toUpperCase()}</h2>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isPending ? 'bg-white/20' :
-                            isActive ? 'bg-green-400/30' :
-                                isWorkComplete ? 'bg-blue-400/30' :
-                                    'bg-white/30'
+                        isActive ? 'bg-green-400/30' :
+                            isWorkComplete ? 'bg-blue-400/30' :
+                                'bg-white/30'
                         }`}>
                         {statusSteps.find(s => s.key === job.operatorStatus)?.label || job.operatorStatus}
                     </span>
@@ -258,8 +287,8 @@ export default function OperatorJobDetailPage() {
                         <div key={step.key} className="flex items-center flex-1">
                             <div className="flex flex-col items-center flex-shrink-0">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${i <= currentStepIndex
-                                        ? 'bg-orange-500 text-white'
-                                        : 'bg-gray-100 text-gray-400'
+                                    ? 'bg-orange-500 text-white'
+                                    : 'bg-gray-100 text-gray-400'
                                     }`}>
                                     {step.icon}
                                 </div>
@@ -314,6 +343,38 @@ export default function OperatorJobDetailPage() {
                     )}
                 </div>
             </div>
+
+            {/* Farm Location Map — visible after accepting */}
+            {!isPending && mapCoords && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+                        <FiNavigation className="w-4 h-4 text-green-600" />
+                        <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wider">Farm Location</h3>
+                    </div>
+                    <div className="px-4 pb-2">
+                        <p className="text-xs text-gray-400">
+                            {farmer?.location?.address || `${farmer?.village || ''} ${farmer?.city || ''}`}
+                            {' • '}{mapCoords.lat.toFixed(5)}, {mapCoords.lng.toFixed(5)}
+                        </p>
+                    </div>
+                    <LocationMap
+                        lat={mapCoords.lat}
+                        lng={mapCoords.lng}
+                        label={`${farmer?.name || 'Farmer'} — ${farm?.plotName || 'Farm'}`}
+                        height="250px"
+                    />
+                    <div className="px-4 py-2 bg-green-50 border-t border-green-100 flex items-center gap-2">
+                        <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${mapCoords.lat},${mapCoords.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-green-700 font-medium hover:underline flex items-center gap-1"
+                        >
+                            <FiNavigation className="w-3.5 h-3.5" /> Open in Google Maps
+                        </a>
+                    </div>
+                </div>
+            )}
 
             {/* Job Info */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">

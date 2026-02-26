@@ -2,7 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { FiClipboard, FiTruck, FiCheckCircle, FiPackage, FiArrowRight, FiClock } from 'react-icons/fi';
+import type { MapPin } from '@/components/HubPickupMap';
+
+const HubPickupMap = dynamic(() => import('@/components/HubPickupMap'), { ssr: false });
 
 interface HubManager {
     id: string;
@@ -37,6 +41,7 @@ export default function HubDashboardPage() {
         totalInventory: 0,
     });
     const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+    const [mapPins, setMapPins] = useState<MapPin[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -69,6 +74,15 @@ export default function HubDashboardPage() {
                     totalInventory: data.data.totalInventory || 0,
                 });
                 setRecentActivity(data.data.recentActivity || []);
+            }
+
+            // Fetch map pins
+            const mapRes = await fetch('/api/hub/map-pins', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const mapData = await mapRes.json();
+            if (mapData.success) {
+                setMapPins(mapData.data || []);
             }
         } catch (error) {
             console.error('Failed to load stats:', error);
@@ -175,6 +189,9 @@ export default function HubDashboardPage() {
                     </div>
                 ))}
             </div>
+
+            {/* Pickup Locations Map */}
+            <HubPickupMap pins={mapPins} height="420px" />
 
             {/* Quick Actions */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">

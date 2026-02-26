@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
 
         await dbConnect();
 
-        const query: Record<string, unknown> = { operatorId: operator.id };
+        const query: Record<string, unknown> = {
+            $or: [{ operatorId: operator.id }, { truckOperatorId: operator.id }],
+        };
 
         if (status === 'incoming') {
             query.operatorStatus = 'pending';
@@ -100,7 +102,10 @@ export async function PATCH(request: NextRequest) {
 
         await dbConnect();
 
-        const assignment = await Assignment.findOne({ _id: assignmentId, operatorId: operator.id });
+        const assignment = await Assignment.findOne({
+            _id: assignmentId,
+            $or: [{ operatorId: operator.id }, { truckOperatorId: operator.id }],
+        });
         if (!assignment) {
             return errorResponse('Assignment not found', 404);
         }

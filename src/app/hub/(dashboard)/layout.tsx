@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
     FiHome, FiClipboard, FiTruck, FiUsers, FiDollarSign,
-    FiPackage, FiLogOut, FiMenu, FiX, FiSettings, FiMessageCircle
+    FiPackage, FiLogOut, FiMenu, FiX, FiSettings, FiMessageCircle, FiShoppingBag
 } from 'react-icons/fi';
 
 interface HubManager {
@@ -27,6 +27,7 @@ const navItems = [
     { href: '/hub/fleet', label: 'Fleet Management', icon: FiSettings },
     { href: '/hub/payouts', label: 'Farmer Payouts', icon: FiDollarSign },
     { href: '/hub/inventory', label: 'Inventory', icon: FiPackage },
+    { href: '/hub/orders', label: 'Buyer Orders', icon: FiShoppingBag },
     { href: '/hub/farmers', label: 'Linked Farmers', icon: FiUsers },
     { href: '/hub/operators', label: 'Operators', icon: FiTruck },
     { href: '/hub/support', label: 'Help & Support', icon: FiMessageCircle },

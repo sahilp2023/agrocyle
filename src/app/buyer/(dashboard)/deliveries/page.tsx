@@ -1,275 +1,256 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FiTruck, FiCheck, FiX, FiClock, FiFilter, FiRefreshCw } from 'react-icons/fi';
+import { FiTruck, FiFilter, FiRefreshCw, FiChevronDown, FiChevronUp, FiCheckCircle, FiClock } from 'react-icons/fi';
+
+interface QualityReport {
+    calorificValue?: number;
+    moistureContent?: number;
+    pelletSize?: number;
+    bulkDensity?: number;
+    ashContent?: number;
+    silicaInAsh?: number;
+    sulfurContent?: number;
+    chlorineContent?: number;
+    torrefied?: boolean;
+}
+
+interface ShipmentDetails {
+    shippingDate?: string;
+    trackingId?: string;
+    vehicleNumber?: string;
+    driverName?: string;
+    driverPhone?: string;
+    estimatedDelivery?: string;
+}
 
 interface Delivery {
     _id: string;
-    deliveryNumber: string;
-    deliveryDate: string;
-    vehicleNumber: string;
-    driverName?: string;
+    orderNumber: string;
     quantityTonnes: number;
-    status: 'in_transit' | 'delivered' | 'accepted' | 'rejected';
-    rejectionReason?: string;
-    moistureLevel?: number;
-    baleType?: string;
-    orderId: { orderNumber: string; quantityTonnes: number };
-    hubId: { name: string; city: string };
+    totalAmount: number;
+    status: 'dispatched' | 'delivered';
+    dispatchedDate?: string;
+    deliveredDate?: string;
+    hubId: { name: string; city: string; code: string };
+    qualityReport?: QualityReport;
+    shipmentDetails?: ShipmentDetails;
 }
 
-const STATUS_FILTERS = [
-    { value: '', label: 'All' },
-    { value: 'in_transit', label: 'In Transit' },
-    { value: 'delivered', label: 'Delivered' },
-    { value: 'accepted', label: 'Accepted' },
-    { value: 'rejected', label: 'Rejected' },
+const QUALITY_LABELS: { key: keyof QualityReport; label: string; unit: string }[] = [
+    { key: 'calorificValue', label: 'Calorific Value', unit: 'MJ/kg' },
+    { key: 'moistureContent', label: 'Moisture Content', unit: '%' },
+    { key: 'pelletSize', label: 'Pellet Size', unit: 'mm' },
+    { key: 'bulkDensity', label: 'Bulk Density', unit: 'kg/m³' },
+    { key: 'ashContent', label: 'Ash Content', unit: '%' },
+    { key: 'silicaInAsh', label: 'Silica in Ash', unit: '%' },
+    { key: 'sulfurContent', label: 'Sulfur Content', unit: '%' },
+    { key: 'chlorineContent', label: 'Chlorine Content', unit: '%' },
 ];
 
 export default function BuyerDeliveriesPage() {
     const [deliveries, setDeliveries] = useState<Delivery[]>([]);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('');
-    const [actionLoading, setActionLoading] = useState<string | null>(null);
-    const [showRejectModal, setShowRejectModal] = useState<Delivery | null>(null);
-    const [rejectionReason, setRejectionReason] = useState('high_moisture');
+    const [filter, setFilter] = useState('all');
+    const [expanded, setExpanded] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadDeliveries();
-    }, [statusFilter]);
+    useEffect(() => { loadDeliveries(); }, [filter]);
 
     const loadDeliveries = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('buyerToken');
-            const url = statusFilter
-                ? `/api/buyer/deliveries?status=${statusFilter}`
-                : '/api/buyer/deliveries';
-
-            const res = await fetch(url, {
+            const params = new URLSearchParams();
+            if (filter !== 'all') params.set('status', filter);
+            const res = await fetch(`/api/buyer/deliveries?${params}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-
             const data = await res.json();
             if (data.success) {
-                setDeliveries(data.data.deliveries);
+                setDeliveries(data.data || []);
             }
-        } catch (error) {
-            console.error('Failed to load deliveries:', error);
+        } catch (err) {
+            console.error('Failed to load deliveries:', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAction = async (deliveryId: string, action: 'accept' | 'reject', reason?: string) => {
-        setActionLoading(deliveryId);
-        try {
-            const token = localStorage.getItem('buyerToken');
-            const res = await fetch(`/api/buyer/deliveries/${deliveryId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ action, rejectionReason: reason }),
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                loadDeliveries();
-                setShowRejectModal(null);
-            }
-        } catch (error) {
-            console.error('Action failed:', error);
-        } finally {
-            setActionLoading(null);
-        }
-    };
-
-    const getStatusStyle = (status: string) => {
-        switch (status) {
-            case 'in_transit': return { bg: 'bg-blue-100', text: 'text-blue-700', icon: FiTruck };
-            case 'delivered': return { bg: 'bg-amber-100', text: 'text-amber-700', icon: FiClock };
-            case 'accepted': return { bg: 'bg-green-100', text: 'text-green-700', icon: FiCheck };
-            case 'rejected': return { bg: 'bg-red-100', text: 'text-red-700', icon: FiX };
-            default: return { bg: 'bg-gray-100', text: 'text-gray-700', icon: FiClock };
-        }
-    };
-
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+    const formatDate = (d?: string) => {
+        if (!d) return '—';
+        return new Date(d).toLocaleDateString('en-IN', {
+            day: 'numeric', month: 'short', year: 'numeric',
         });
+    };
+
+    const toggleExpand = (id: string) => {
+        setExpanded(prev => prev === id ? null : id);
     };
 
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-800">Deliveries</h1>
-                <p className="text-gray-500 mt-1">Track and manage incoming deliveries</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                        <FiTruck className="w-7 h-7 text-blue-500" />
+                        Deliveries
+                    </h1>
+                    <p className="text-gray-500 text-sm mt-1">Track your dispatched orders and quality reports</p>
+                </div>
+                <button onClick={loadDeliveries}
+                    className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">
+                    <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                </button>
             </div>
 
-            {/* Filters */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <FiFilter className="w-5 h-5 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-600">Status:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {STATUS_FILTERS.map((filter) => (
-                            <button
-                                key={filter.value}
-                                onClick={() => setStatusFilter(filter.value)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === filter.value
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {filter.label}
-                            </button>
-                        ))}
-                    </div>
-                    <button
-                        onClick={loadDeliveries}
-                        className="ml-auto p-2 text-gray-400 hover:text-gray-600"
-                        title="Refresh"
-                    >
-                        <FiRefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            {/* Filter */}
+            <div className="flex items-center gap-2">
+                <FiFilter className="w-4 h-4 text-gray-400" />
+                {['all', 'dispatched', 'delivered'].map(s => (
+                    <button key={s} onClick={() => setFilter(s)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}>
+                        {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
-                </div>
+                ))}
             </div>
 
             {/* Deliveries List */}
             {loading ? (
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin text-4xl">🚚</div>
-                </div>
+                <div className="p-12 text-center"><div className="animate-spin text-4xl">🚚</div></div>
             ) : deliveries.length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                    <FiTruck className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                    <h3 className="text-lg font-medium text-gray-800 mb-2">No deliveries found</h3>
-                    <p className="text-gray-500">
-                        {statusFilter ? 'No deliveries with this status' : 'Deliveries will appear here once orders are dispatched'}
-                    </p>
+                <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-400">
+                    <FiTruck className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p>No deliveries yet</p>
+                    <p className="text-sm mt-1">Dispatched orders will appear here</p>
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {deliveries.map((delivery) => {
-                        const statusStyle = getStatusStyle(delivery.status);
-                        const StatusIcon = statusStyle.icon;
-
-                        return (
-                            <div key={delivery._id} className="bg-white rounded-xl border border-gray-200 p-5">
-                                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                                    {/* Delivery Info */}
-                                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Delivery #</p>
-                                            <p className="font-medium text-emerald-600">{delivery.deliveryNumber}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Order #</p>
-                                            <p className="font-medium text-gray-800">{delivery.orderId?.orderNumber}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Vehicle</p>
-                                            <p className="font-medium text-gray-800">{delivery.vehicleNumber}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Quantity</p>
-                                            <p className="font-medium text-gray-800">{delivery.quantityTonnes} tons</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Hub</p>
-                                            <p className="font-medium text-gray-800">{delivery.hubId?.name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Date/Time</p>
-                                            <p className="text-sm text-gray-700">{formatDate(delivery.deliveryDate)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Status</p>
-                                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusStyle.bg} ${statusStyle.text}`}>
-                                                <StatusIcon className="w-3 h-3" />
-                                                {delivery.status.replace('_', ' ')}
-                                            </span>
-                                        </div>
-                                        {delivery.rejectionReason && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-1">Rejection Reason</p>
-                                                <p className="text-sm text-red-600">{delivery.rejectionReason.replace('_', ' ')}</p>
-                                            </div>
-                                        )}
+                    {deliveries.map((d) => (
+                        <div key={d._id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                            {/* Summary Row */}
+                            <div className="p-5 flex items-center gap-4 cursor-pointer hover:bg-gray-50"
+                                onClick={() => toggleExpand(d._id)}>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${d.status === 'delivered' ? 'bg-green-100' : 'bg-purple-100'
+                                    }`}>
+                                    {d.status === 'delivered' ? '✅' : '🚚'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-0.5">
+                                        <span className="font-mono font-medium text-blue-600 text-sm">{d.orderNumber}</span>
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${d.status === 'delivered' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+                                            }`}>
+                                            {d.status === 'delivered' ? <FiCheckCircle className="w-3 h-3" /> : <FiClock className="w-3 h-3" />}
+                                            {d.status === 'delivered' ? 'Delivered' : 'In Transit'}
+                                        </span>
                                     </div>
-
-                                    {/* Actions */}
-                                    {delivery.status === 'delivered' && (
-                                        <div className="flex gap-2 lg:flex-col">
-                                            <button
-                                                onClick={() => handleAction(delivery._id, 'accept')}
-                                                disabled={actionLoading === delivery._id}
-                                                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                                            >
-                                                <FiCheck className="w-4 h-4" />
-                                                Accept
-                                            </button>
-                                            <button
-                                                onClick={() => setShowRejectModal(delivery)}
-                                                disabled={actionLoading === delivery._id}
-                                                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
-                                            >
-                                                <FiX className="w-4 h-4" />
-                                                Reject
-                                            </button>
-                                        </div>
+                                    <p className="text-sm text-gray-600">
+                                        {d.hubId?.name} • {d.quantityTonnes}T • ₹{d.totalAmount?.toLocaleString()}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Dispatched: {formatDate(d.dispatchedDate)}
+                                        {d.deliveredDate && ` • Delivered: ${formatDate(d.deliveredDate)}`}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {d.qualityReport?.calorificValue && (
+                                        <span className="text-xs bg-green-50 text-green-600 px-2 py-1 rounded-lg">QC ✓</span>
                                     )}
+                                    {expanded === d._id ? <FiChevronUp className="w-5 h-5 text-gray-400" /> : <FiChevronDown className="w-5 h-5 text-gray-400" />}
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
-            )}
 
-            {/* Reject Modal */}
-            {showRejectModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl p-6 max-w-md w-full">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Reject Delivery</h3>
-                        <p className="text-gray-600 mb-4">
-                            Select a reason for rejecting delivery <strong>{showRejectModal.deliveryNumber}</strong>
-                        </p>
-                        <select
-                            value={rejectionReason}
-                            onChange={(e) => setRejectionReason(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl mb-4"
-                        >
-                            <option value="high_moisture">High Moisture</option>
-                            <option value="contamination">Contamination</option>
-                            <option value="under_weight">Under Weight</option>
-                            <option value="other">Other</option>
-                        </select>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowRejectModal(null)}
-                                className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => handleAction(showRejectModal._id, 'reject', rejectionReason)}
-                                disabled={actionLoading === showRejectModal._id}
-                                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50"
-                            >
-                                Confirm Reject
-                            </button>
+                            {/* Expanded Details */}
+                            {expanded === d._id && (
+                                <div className="border-t border-gray-100 p-5 space-y-5 bg-gray-50/50">
+                                    {/* Shipment Details */}
+                                    {d.shipmentDetails && (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                                                <FiTruck className="w-4 h-4 text-blue-500" /> Shipment Details
+                                            </h3>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                {d.shipmentDetails.trackingId && (
+                                                    <div className="bg-white rounded-xl border border-gray-200 p-3">
+                                                        <p className="text-xs text-gray-400">Tracking ID</p>
+                                                        <p className="font-mono font-medium text-gray-800 mt-0.5">{d.shipmentDetails.trackingId}</p>
+                                                    </div>
+                                                )}
+                                                {d.shipmentDetails.vehicleNumber && (
+                                                    <div className="bg-white rounded-xl border border-gray-200 p-3">
+                                                        <p className="text-xs text-gray-400">Vehicle</p>
+                                                        <p className="font-medium text-gray-800 mt-0.5">{d.shipmentDetails.vehicleNumber}</p>
+                                                    </div>
+                                                )}
+                                                {d.shipmentDetails.driverName && (
+                                                    <div className="bg-white rounded-xl border border-gray-200 p-3">
+                                                        <p className="text-xs text-gray-400">Driver</p>
+                                                        <p className="font-medium text-gray-800 mt-0.5">
+                                                            {d.shipmentDetails.driverName}
+                                                            {d.shipmentDetails.driverPhone && (
+                                                                <span className="text-gray-400 text-xs ml-1">({d.shipmentDetails.driverPhone})</span>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                {d.shipmentDetails.shippingDate && (
+                                                    <div className="bg-white rounded-xl border border-gray-200 p-3">
+                                                        <p className="text-xs text-gray-400">Shipped On</p>
+                                                        <p className="font-medium text-gray-800 mt-0.5">{formatDate(d.shipmentDetails.shippingDate)}</p>
+                                                    </div>
+                                                )}
+                                                {d.shipmentDetails.estimatedDelivery && (
+                                                    <div className="bg-white rounded-xl border border-gray-200 p-3">
+                                                        <p className="text-xs text-gray-400">ETA</p>
+                                                        <p className="font-medium text-amber-600 mt-0.5">{formatDate(d.shipmentDetails.estimatedDelivery)}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Quality Report */}
+                                    {d.qualityReport && (
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+                                                📋 Quality Validation Report
+                                            </h3>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                {QUALITY_LABELS.map(q => {
+                                                    const val = d.qualityReport?.[q.key];
+                                                    if (val === undefined || val === null) return null;
+                                                    return (
+                                                        <div key={q.key} className="bg-white rounded-xl border border-gray-200 p-3 text-center">
+                                                            <p className="text-xs text-gray-400">{q.label}</p>
+                                                            <p className="text-lg font-bold text-gray-800 mt-1">{typeof val === 'number' ? val.toFixed(2) : String(val)}</p>
+                                                            <p className="text-xs text-gray-300">{q.unit}</p>
+                                                        </div>
+                                                    );
+                                                })}
+                                                <div className="bg-white rounded-xl border border-gray-200 p-3 text-center">
+                                                    <p className="text-xs text-gray-400">Torrefied</p>
+                                                    <p className="text-lg font-bold mt-1">
+                                                        {d.qualityReport.torrefied ?
+                                                            <span className="text-green-600">Yes ✓</span> :
+                                                            <span className="text-gray-500">No</span>
+                                                        }
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {!d.qualityReport?.calorificValue && !d.shipmentDetails?.trackingId && (
+                                        <p className="text-center text-gray-400 text-sm py-4">
+                                            Details will be available once the hub prepares your order
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    ))}
                 </div>
             )}
         </div>

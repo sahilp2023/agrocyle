@@ -27,6 +27,12 @@ interface Assignment {
         phone: string;
         vehicleNumber: string;
     };
+    truckOperatorId?: {
+        _id: string;
+        name: string;
+        phone: string;
+        vehicleNumber: string;
+    };
     status: string;
     operatorStatus?: string;
     assignedAt: string;
@@ -248,7 +254,8 @@ export default function AssignmentsPage() {
                                 <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     <th className="px-6 py-4">Assignment</th>
                                     <th className="px-6 py-4">Farmer</th>
-                                    <th className="px-6 py-4">Operator</th>
+                                    <th className="px-6 py-4">Baler</th>
+                                    <th className="px-6 py-4">Truck Operator</th>
                                     <th className="px-6 py-4">
                                         {activeTab === 'completed' ? 'Completed' : 'Assigned'}
                                     </th>
@@ -293,6 +300,23 @@ export default function AssignmentsPage() {
                                                     </p>
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {a.truckOperatorId ? (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-lg">🚛</span>
+                                                    <div>
+                                                        <p className="font-medium text-gray-800">
+                                                            {a.truckOperatorId.name}
+                                                        </p>
+                                                        <p className="text-xs text-gray-400">
+                                                            {a.truckOperatorId.vehicleNumber}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-gray-300 italic">Not assigned</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {activeTab === 'completed' && a.completedAt

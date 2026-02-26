@@ -102,11 +102,13 @@ export async function POST(request: NextRequest) {
             hubId: manager.hubId,
             type,
             quantityTonnes,
-            farmerName: type === 'inbound' ? farmerName : undefined,
             buyerName: type === 'outbound' ? buyerName : undefined,
-            vehicleNumber,
-            notes,
-            assignmentId,
+            bookingId: assignmentId || undefined,
+            notes: [
+                type === 'inbound' && farmerName ? `Farmer: ${farmerName}` : '',
+                vehicleNumber ? `Vehicle: ${vehicleNumber}` : '',
+                notes || '',
+            ].filter(Boolean).join(' | ') || undefined,
             createdBy: manager.id,
         });
 

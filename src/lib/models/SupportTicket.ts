@@ -130,13 +130,12 @@ SupportTicketSchema.index({ status: 1 });
 SupportTicketSchema.index({ createdAt: -1 });
 
 // Generate ticket number before save
-SupportTicketSchema.pre('save', async function (next) {
+SupportTicketSchema.pre('save', async function () {
     if (this.isNew && !this.ticketNumber) {
         const year = new Date().getFullYear();
         const count = await mongoose.models.SupportTicket.countDocuments();
         this.ticketNumber = `TKT-${year}-${String(count + 1).padStart(4, '0')}`;
     }
-    next();
 });
 
 const SupportTicket: Model<ISupportTicket> =

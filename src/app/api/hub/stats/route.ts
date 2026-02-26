@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
             .sort({ updatedAt: -1 })
             .limit(5);
 
-        const recentActivity = recentAssignments.map((a) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const recentActivity = recentAssignments.map((a: any) => ({
             id: a._id,
             type: a.status === 'completed' ? 'completion' : 'assignment',
             message:

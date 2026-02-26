@@ -102,13 +102,12 @@ const BuyerDeliverySchema = new Schema<IBuyerDelivery>(
 );
 
 // Auto-generate delivery number
-BuyerDeliverySchema.pre('save', async function (next) {
+BuyerDeliverySchema.pre('save', async function () {
     if (!this.deliveryNumber) {
         const year = new Date().getFullYear();
         const count = await mongoose.models.BuyerDelivery.countDocuments() + 1;
         this.deliveryNumber = `DEL-${year}-${String(count).padStart(5, '0')}`;
     }
-    next();
 });
 
 BuyerDeliverySchema.index({ orderId: 1, status: 1 });
